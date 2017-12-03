@@ -1,0 +1,5 @@
+addpath ("./m")
+addpath ("./kiwiclient")
+mkoctfile kiwiclient/read_kiwi_iq_wav.cc
+pkg load signal
+pkg load mapping

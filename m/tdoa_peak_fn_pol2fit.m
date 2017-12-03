@@ -9,6 +9,6 @@ function [lag,peak]=tdoa_peak_fn_pol2fit(t, y)
   end
   x    = inv(m'*m)*m'*y; ## least squares
   dt   = -x(2)/2/x(3);
-  lag  = t(1) - dt/time_scale;
+  lag  = t(1) + dt/time_scale;
   peak = sum(x.*dt.**[0 1 2]);
 endfunction

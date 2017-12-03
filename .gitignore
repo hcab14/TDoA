@@ -1,3 +1,4 @@
-*.o
 *.oct
+*.o
 *~
+octave-workspace

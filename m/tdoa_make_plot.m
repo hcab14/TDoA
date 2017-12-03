@@ -98,7 +98,7 @@ function do_plot(plot_data, plot_filename)
       fprintf(fid, 'set ylabel  "latitude (deg)"\n');
       fprintf(fid, 'set cblabel "%s"\n', plot_data(i,j).cblabel);
       fprintf(fid, 'set title   "%s"\n', plot_data(i,j).title);
-      fprintf(fid, 'plot "%s" using 2:1:3 w image t "", "world_50m.txt" with lines linestyle 1 lc "gray" t "", "%s" using 2:1:3 w labels font ",12" offset .3,.3 point pt 71 lc "blue" t ""\n', plot_data(i,j).dn, plot_data(i,j).cn);
+      fprintf(fid, 'plot "%s" using 2:1:3 w image t "", "<bzip2 -dc coastline/world_10m.txt.bz2" with lines linestyle 1 lc "gray" t "", "%s" using 2:1:3 w labels font ",12" offset .3,.3 point pt 71 lc "blue" t ""\n', plot_data(i,j).dn, plot_data(i,j).cn);
     end
   end
   fprintf(fid, 'unset multiplot\n');

@@ -18,16 +18,25 @@ function [tdoa,input]=proc_tdoa_DCF77
 
   ## 200 Hz high-pass filter
   b = fir1(1024, 200/12000, 'high');
-  for i=1:length(input)
+  n = length(input);
+  for i=1:n
     input(i).z      = filter(b,1,input(i).z)(512:end);
   end
 
-  tdoa  = tdoa_compute_lags(input, struct('dt',   3*12000,            # 3-second cross-correlation intervals
+  tdoa  = tdoa_compute_lags(input, struct('dt',   1*12000,            # 1-second cross-correlation intervals
                                           'range',  0.005,            # peak search range is +-5 ms
                                           'dk',    [-1:1],            # use three points for peak fitting
                                           'fn', @tdoa_peak_fn_pol2fit # fit a pol2 to the peak
                                          ));
-
+  for i=1:n
+    for j=i+1:n
+      tdoa(i,j).lags_orig = tdoa(i,j).lags;
+      b = tdoa(i,j).gpssec>124953 & tdoa(i,j).gpssec<124960;
+      tdoa(i,j).time_cut  = [124953 124960];
+      tdoa(i,j).lags(~b)  = [];
+      tdoa(i,j).peaks(~b) = [];
+    end
+  end
 
   tdoa = tdoa_make_plot(input, tdoa, struct('lat', [ 40:0.05:60],
                                             'lon', [ -5:0.05:16],
@@ -35,4 +44,6 @@ function [tdoa,input]=proc_tdoa_DCF77
                                             'known_location', struct('coord', [50.0152 9.0112],
                                                                      'name',  'DCF77')
                                            ));
+  tdoa = tdoa_plot_dt(input, tdoa, 2500);
+  print png/TDoA_77.5_dt.png -dpng
 endfunction

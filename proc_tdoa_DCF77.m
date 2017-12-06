@@ -17,15 +17,15 @@ function [tdoa,input]=proc_tdoa_DCF77
   input = tdoa_read_data(input);
 
   ## 200 Hz high-pass filter
-  b = fir1(1024, 200/12000, 'high');
+  b = fir1(1024, 500/12000, 'high');
   n = length(input);
   for i=1:n
     input(i).z      = filter(b,1,input(i).z)(512:end);
   end
 
-  tdoa  = tdoa_compute_lags(input, struct('dt',   1*12000,            # 1-second cross-correlation intervals
+  tdoa  = tdoa_compute_lags(input, struct('dt',     12000,            # 1-second cross-correlation intervals
                                           'range',  0.005,            # peak search range is +-5 ms
-                                          'dk',    [-1:1],            # use three points for peak fitting
+                                          'dk',    [-2:2],            # use 5 points for peak fitting
                                           'fn', @tdoa_peak_fn_pol2fit # fit a pol2 to the peak
                                          ));
   for i=1:n

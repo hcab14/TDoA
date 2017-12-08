@@ -32,9 +32,15 @@ function tdoa=tdoa_make_plot(input, tdoa, plot_info)
       [fid, tdoa(i,j).dn] = mkstemp('data-XXXXXX', 'delete');
       fprintf(fid, '%g %g %g\n', [a(:,1:2) min(20, sqrt(tdoa(i,j).h))]');
       fclose(fid);
+      idx = sqrt(tdoa(i,j).h)<20;
+      [fid, tdoa(i,j).dns] = mkstemp('data-XXXXXX', 'delete');
+      fprintf(fid, '%g %g %g\n', [a(idx,1:2) sqrt(tdoa(i,j).h(idx))]');
+      fclose(fid);
       [fid, tdoa(i,j).cn] = mkstemp('coord-XXXXXX', 'delete');
       if isfield(plot_info, 'known_location')
-        fprintf(fid, '%f %f %s\n', plot_info.known_location.coord, plot_info.known_location.name);
+        for k=1:length(plot_info.known_location)
+          fprintf(fid, '%f %f %s\n', plot_info.known_location(k).coord, plot_info.known_location(k).name);
+        end
       end
       fprintf(fid, '%f %f %s\n', input(i).coord, input(i).name);
       fprintf(fid, '%f %f %s\n', input(j).coord, input(j).name);
@@ -52,7 +58,9 @@ function tdoa=tdoa_make_plot(input, tdoa, plot_info)
   ## (4) compute chi2 for all pairs of receivers for each grid point
   [fid, tdoa(n-1,2).cn] = mkstemp('coord-XXXXXX', 'delete');
   if isfield(plot_info, 'known_location')
-    fprintf(fid, '%f %f %s\n', plot_info.known_location.coord, plot_info.known_location.name);
+    for k=1:length(plot_info.known_location)
+      fprintf(fid, '%f %f %s\n', plot_info.known_location(k).coord, plot_info.known_location(k).name);
+    end
   end
   for i=1:n
     fprintf(fid, '%f %f %s\n', input(i).coord, input(i).name);
@@ -62,6 +70,10 @@ function tdoa=tdoa_make_plot(input, tdoa, plot_info)
   [fid, tdoa(n-1,2).dn] = mkstemp('data-XXXXXX', 'delete');
   fprintf(fid, '%f %f %f\n', [a(:,1:2) min(20, sqrt(hSum)/n)]');
   fclose(fid);
+  idx = sqrt(hSum)/n<20;
+  [fid, tdoa(n-1,2).dns] = mkstemp('data-XXXXXX', 'delete');
+  fprintf(fid, '%g %g %g\n', [a(idx,1:2) sqrt(hSum(idx))/n]');
+  fclose(fid);
   tdoa(n-1,2).title   = allnames(2:end);
   tdoa(n-1,2).xrange  = [min(a(:,2)), max(a(:,2))];
   tdoa(n-1,2).yrange  = [min(a(:,1)), max(a(:,1))];
@@ -69,10 +81,14 @@ function tdoa=tdoa_make_plot(input, tdoa, plot_info)
   tdoa(n-1,2).cblabel = 'chi2/ndf';
 
   ## (5) generate gnuplot script and run gnuplot
-  do_plot(tdoa, plot_info.plotname);
+  plot_contour = false;
+  if isfield(plot_info, 'plot_contours')
+    plot_contour = plot_info.plot_contours;
+  end
+  do_plot(tdoa, plot_info.plotname, plot_contour);
 endfunction
 
-function do_plot(plot_data, plot_filename)
+function do_plot(plot_data, plot_filename, plot_contour)
   [n,m] = size(plot_data);
   [fid, name] = mkstemp('gnuplot-XXXXXX', 'delete');
   fprintf(fid, 'set output "png/%s.png"\n', plot_filename);
@@ -98,11 +114,34 @@ function do_plot(plot_data, plot_filename)
       fprintf(fid, 'set ylabel  "latitude (deg)"\n');
       fprintf(fid, 'set cblabel "%s"\n', plot_data(i,j).cblabel);
       fprintf(fid, 'set title   "%s"\n', plot_data(i,j).title);
-      fprintf(fid, 'plot "%s" using 2:1:3 w image t "", "<bzip2 -dc coastline/world_10m.txt.bz2" with lines linestyle 1 lc "gray" t "", "%s" using 2:1:3 w labels font ",12" offset .3,.3 point pt 71 lc "blue" t ""\n', plot_data(i,j).dn, plot_data(i,j).cn);
+      if plot_contour
+        fprintf(fid, 'set contour\n');
+        fprintf(fid, 'unset surface\n');
+        fprintf(fid, 'set cntrparam order 8\n');
+        fprintf(fid, 'set cntrparam bspline\n');
+        fprintf(fid, 'set isosamples 100,100\n');
+        fprintf(fid, 'set cntrparam levels discrete 1,3,5,19\n');
+        fprintf(fid, 'set dgrid3d 100,100,4\n');
+        [_, cntr_name] = mkstemp('contour-XXXXXX', 'delete');
+        fprintf(fid, 'set table "%s"\n', cntr_name);
+        fprintf(fid, 'splot "%s" u 2:1:3 not\n', plot_data(i,j).dns);
+        fprintf(fid, 'unset table\n');
+        fprintf(fid, 'unset contour\n');
+
+        fprintf(fid, 'plot "%s" using 2:1:3 w image t "", "<bzip2 -dc coastline/world_10m.txt.bz2" with lines linestyle 1 lc "gray" t "", "%s" using 2:1:3 w labels font ",12" offset .3,.3 point pt 71 lc "blue" not, "%s" u 1:($3<19 ? $2 : 1/0) lc 0 w l not, "<awk %s//{if ((NR%%80)==0 && $3<19){print}}%s %s" w labels font ",9" tc "gray" not\n',
+                plot_data(i,j).dn, plot_data(i,j).cn, cntr_name, "'", "'", cntr_name);
+      else
+        fprintf(fid, 'plot "%s" using 2:1:3 w image t "", "<bzip2 -dc coastline/world_10m.txt.bz2" with lines linestyle 1 lc "gray" t "", "%s" using 2:1:3 w labels font ",12" offset .3,.3 point pt 71 lc "blue" not\n', plot_data(i,j).dn, plot_data(i,j).cn);
+      end
     end
   end
   fprintf(fid, 'unset multiplot\n');
   fclose(fid);
   system(sprintf('gnuplot < %s', name));
+endfunction
+
+function plot_title(title)
+  ha = axes('Position',[0 0 1 1],'Xlim',[0 1],'Ylim',[0  1],'Box','off','Visible','off','Units','normalized', 'clipping' , 'off');
+  text(0.5, 0.98, title, 'fontweight', 'bold', 'horizontalalignment', 'center');
 endfunction
 

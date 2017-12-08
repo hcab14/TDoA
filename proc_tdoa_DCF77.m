@@ -3,16 +3,8 @@
 function [tdoa,input]=proc_tdoa_DCF77
 
   input(1).fn    = 'iq/20171127T104156Z_77500_iq_HB9RYZ.wav';
-  input(1).coord = [47.1721 8.42683];
-  input(1).name  = 'HB9RYZ';
-
   input(2).fn    = 'iq/20171127T104156Z_77500_iq_F1JEK.wav';
-  input(2).coord = [45.7695,0.598428];
-  input(2).name  = 'F1JEK';
-
   input(3).fn    = 'iq/20171127T104156Z_77500_iq_DF0KL.wav';
-  input(3).coord = [53.6458333 7.2916667]
-  input(3).name  = 'DF0KL';
 
   input = tdoa_read_data(input);
 
@@ -44,6 +36,6 @@ function [tdoa,input]=proc_tdoa_DCF77
                                             'known_location', struct('coord', [50.0152 9.0112],
                                                                      'name',  'DCF77')
                                            ));
-  tdoa = tdoa_plot_dt(input, tdoa, 2500);
+  tdoa = tdoa_plot_dt(input, tdoa, 2.5e-3);
   print png/TDoA_77.5_dt.png -dpng
 endfunction

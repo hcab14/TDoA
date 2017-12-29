@@ -1,6 +1,6 @@
 ## -*- octave -*-
 
-function tdoa=tdoa_plot_dt(input, tdoa, dt)
+function tdoa=tdoa_plot_dt(input, tdoa, dt, plot_title)
   bin_width = 0.25/12001;
 
   n = length(input);
@@ -13,8 +13,10 @@ function tdoa=tdoa_plot_dt(input, tdoa, dt)
       bins = tmm(1)+bin_width*(0.5+[0:nx-1]);
       a    = zeros(ny,nx);
       for k=1:ny
-        a(k,:) = interp1(tdoa(i,j).t{k}, abs(tdoa(i,j).r{k}), bins);
+        a(k,:)  = interp1(tdoa(i,j).t{k}, abs(tdoa(i,j).r{k}), bins);
+        a(k,:) /= max(abs(a(k,:)));
       end
+      tdoa(i,j).bins = bins;
       imagesc(1e3*bins, tdoa(i,j).gpssec, a);
       ylabel('GPS seconds');
       xlabel('dt (msec)');
@@ -30,9 +32,15 @@ function tdoa=tdoa_plot_dt(input, tdoa, dt)
       tdoa(i,j).a = a;
 
       hold on;
-      plot(1e3*tdoa(i,j).lags_orig, tdoa(i,j).gpssec, '.r');
-      plot(1e3*tdoa(i,j).lags_orig, tdoa(i,j).gpssec, '.r');
+      b = tdoa(i,j).lags_filter;
+      plot(1e3*tdoa(i,j).lags,    tdoa(i,j).gpssec,    '.', 'markeredgecolor', 0.85*[1 1 1], 'markersize', 0.1, 'markerfacecolor', 'none');
+      plot(1e3*tdoa(i,j).lags,    tdoa(i,j).gpssec,    '.', 'markeredgecolor', 0.85*[1 1 1], 'markersize', 0.1, 'markerfacecolor', 'none');
+      plot(1e3*tdoa(i,j).lags(b), tdoa(i,j).gpssec(b), '.r', 'markersize', 0.1, 'markerfacecolor', 'none');
+      plot(1e3*tdoa(i,j).lags(b), tdoa(i,j).gpssec(b), '.r', 'markersize', 0.1, 'markerfacecolor', 'none');
       hold off;
     end
   end
+  ha = axes('Position',[0 0 1 1],'Xlim',[0 1],'Ylim',[0  1],'Box','off','Visible','off','Units','normalized', 'clipping' , 'off');
+  text(0.5, 0.98, plot_title, 'fontweight', 'bold', 'horizontalalignment', 'center');
 endfunction
+

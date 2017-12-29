@@ -25,8 +25,10 @@ function tdoa=tdoa_make_plot(input, tdoa, plot_info)
   for i=1:n
     allnames = sprintf('%s %s', allnames, input(i).name);
     for j=1+i:n
-      xlag = sum(tdoa(i,j).peaks.**2 .* tdoa(i,j).lags)              / sum(tdoa(i,j).peaks.**2);
-      slag = sum(tdoa(i,j).peaks.**2 .* (tdoa(i,j).lags - xlag).**2) / sum(tdoa(i,j).peaks.**2);
+      b = tdoa(i,j).lags_filter;
+      xlag = sum(tdoa(i,j).peaks(b).**2 .* tdoa(i,j).lags(b))              / sum(tdoa(i,j).peaks(b).**2);
+      slag = sum(tdoa(i,j).peaks(b).**2 .* (tdoa(i,j).lags(b) - xlag).**2) / sum(tdoa(i,j).peaks(b).**2);
+      slag = max((50e-6)**2, slag);
       ##      tdoa(i,j).h = (dt{i}-dt{j}-mean(tdoa(i,j).lags)).**2 / std(tdoa(i,j).lags)**2;
       tdoa(i,j).h = (dt{i}-dt{j}-xlag).**2 / slag;
       [fid, tdoa(i,j).dn] = mkstemp('data-XXXXXX', 'delete');
@@ -45,7 +47,9 @@ function tdoa=tdoa_make_plot(input, tdoa, plot_info)
       fprintf(fid, '%f %f %s\n', input(i).coord, input(i).name);
       fprintf(fid, '%f %f %s\n', input(j).coord, input(j).name);
       fclose(fid);
-      tdoa(i,j).title   = sprintf('%s-%s:  dt=%.0fus RMS(dt)=%.0fus', input(i).name, input(j).name, mean(tdoa(i,j).lags)*1e6, std(tdoa(i,j).lags)*1e6);
+      b = tdoa(i,j).lags_filter;
+      tdoa(i,j).title   = sprintf('%s-%s:  dt=%.0fus RMS(dt)=%.0fus',
+                                  input(i).name, input(j).name, mean(tdoa(i,j).lags(b))*1e6, std(tdoa(i,j).lags(b))*1e6);
       tdoa(i,j).xrange  = [min(a(:,2)), max(a(:,2))];
       tdoa(i,j).yrange  = [min(a(:,1)), max(a(:,1))];
       tdoa(i,j).cbrange = [0 20];
@@ -85,16 +89,16 @@ function tdoa=tdoa_make_plot(input, tdoa, plot_info)
   if isfield(plot_info, 'plot_contours')
     plot_contour = plot_info.plot_contours;
   end
-  do_plot(tdoa, plot_info.plotname, plot_contour);
+  do_plot(tdoa, plot_info.plotname, plot_contour, plot_info.title);
 endfunction
 
-function do_plot(plot_data, plot_filename, plot_contour)
+function do_plot(plot_data, plot_filename, plot_contour, plot_title)
   [n,m] = size(plot_data);
   [fid, name] = mkstemp('gnuplot-XXXXXX', 'delete');
   fprintf(fid, 'set output "png/%s.png"\n', plot_filename);
-  fprintf(fid, 'set terminal png size %d,%d enhanced font "Helvetica,18"\n', [800 600].*[n n]);
+  fprintf(fid, 'set terminal png size %d,%d enhanced font "Helvetica,18"\n', 1.0*[800 600].*[n n]);
 
-  fprintf(fid, 'set multiplot\n');
+  fprintf(fid, 'set multiplot title "%s"\n', plot_title);
   fprintf(fid, 'set palette model RGB\n');
   fprintf(fid, 'set palette defined ( 0 "red", 0.5 "green", 1 "white" )\n');
 
@@ -105,8 +109,8 @@ function do_plot(plot_data, plot_filename, plot_contour)
     end
     for j=jrange
       largePlot = (i==m-1 && j==2 && n==4);
-      fprintf(fid, 'set origin   %f,%f\n', ([i-1 j-2] - largePlot*[1 0])/n);
-      fprintf(fid, 'set size     %f,%f\n', ([1 1]+largePlot*[1 1])/n);
+      fprintf(fid, 'set origin   %f,%f\n', ([i-1 j-2] - largePlot*[1 0])/n .* [1 0.98]);
+      fprintf(fid, 'set size     %f,%f\n', ([1 1]+largePlot*[1 1])/n .* [1 0.98]);
       fprintf(fid, 'set xrange  [%f:%f]\n', plot_data(i,j).xrange);
       fprintf(fid, 'set yrange  [%f:%f]\n', plot_data(i,j).yrange);
       fprintf(fid, 'set cbrange [%f:%f]\n', plot_data(i,j).cbrange);
@@ -114,6 +118,7 @@ function do_plot(plot_data, plot_filename, plot_contour)
       fprintf(fid, 'set ylabel  "latitude (deg)"\n');
       fprintf(fid, 'set cblabel "%s"\n', plot_data(i,j).cblabel);
       fprintf(fid, 'set title   "%s"\n', plot_data(i,j).title);
+      fprintf(fid, 'set grid\n');
       if plot_contour
         fprintf(fid, 'set contour\n');
         fprintf(fid, 'unset surface\n');
@@ -128,7 +133,7 @@ function do_plot(plot_data, plot_filename, plot_contour)
         fprintf(fid, 'unset table\n');
         fprintf(fid, 'unset contour\n');
 
-        fprintf(fid, 'plot "%s" using 2:1:3 w image t "", "<bzip2 -dc coastline/world_10m.txt.bz2" with lines linestyle 1 lc "gray" t "", "%s" using 2:1:3 w labels font ",12" offset .3,.3 point pt 71 lc "blue" not, "%s" u 1:($3<19 ? $2 : 1/0) lc 0 w l not, "<awk %s//{if ((NR%%80)==0 && $3<19){print}}%s %s" w labels font ",9" tc "gray" not\n',
+        fprintf(fid, 'plot "%s" using 2:1:3 w image t "", "<bzip2 -dc coastline/world_10m.txt.bz2" with lines linestyle 1 lc "gray" t "", "%s" using 2:1:3 w labels font ",12" offset .3,.3 point pt 71 lc "blue" not, "%s" u 1:($3<19 ? $2 : 1/0) lc 0 w l not, "<awk %s//{if ((NR%%160)==0 && $3<19){print}}%s %s" w labels font ",9" tc "gray" not\n',
                 plot_data(i,j).dn, plot_data(i,j).cn, cntr_name, "'", "'", cntr_name);
       else
         fprintf(fid, 'plot "%s" using 2:1:3 w image t "", "<bzip2 -dc coastline/world_10m.txt.bz2" with lines linestyle 1 lc "gray" t "", "%s" using 2:1:3 w labels font ",12" offset .3,.3 point pt 71 lc "blue" not\n', plot_data(i,j).dn, plot_data(i,j).cn);
@@ -138,10 +143,5 @@ function do_plot(plot_data, plot_filename, plot_contour)
   fprintf(fid, 'unset multiplot\n');
   fclose(fid);
   system(sprintf('gnuplot < %s', name));
-endfunction
-
-function plot_title(title)
-  ha = axes('Position',[0 0 1 1],'Xlim',[0 1],'Ylim',[0  1],'Box','off','Visible','off','Units','normalized', 'clipping' , 'off');
-  text(0.5, 0.98, title, 'fontweight', 'bold', 'horizontalalignment', 'center');
 endfunction
 

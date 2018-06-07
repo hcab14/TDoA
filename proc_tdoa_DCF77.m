@@ -2,9 +2,9 @@
 
 function [tdoa,input]=proc_tdoa_DCF77
 
-  input(1).fn    = 'iq/20171127T104156Z_77500_iq_HB9RYZ.wav';
-  input(2).fn    = 'iq/20171127T104156Z_77500_iq_F1JEK.wav';
-  input(3).fn    = 'iq/20171127T104156Z_77500_iq_DF0KL.wav';
+  input(1).fn    = 'iq/20171127T104156Z_77500_HB9RYZ_iq.wav';
+  input(2).fn    = 'iq/20171127T104156Z_77500_F1JEK_iq.wav';
+  input(3).fn    = 'iq/20171127T104156Z_77500_DF0KL_iq.wav';
 
   input = tdoa_read_data(input);
 
@@ -22,7 +22,7 @@ function [tdoa,input]=proc_tdoa_DCF77
                                          ));
   for i=1:n
     for j=i+1:n
-      tdoa(i,j).lags_filter = tdoa(i,j).gpssec>124953 & tdoa(i,j).gpssec<124960;
+      tdoa(i,j).lags_filter = ones(size(tdoa(i,j).gpssec))==1;
     end
   end
 

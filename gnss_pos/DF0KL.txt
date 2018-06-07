@@ -1,0 +1,1 @@
+d.DF0KL = struct('coord', [53.665337,7.282766], 'host', 'sielsdr.ddns.net', 'port', 8073);

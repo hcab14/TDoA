@@ -13,10 +13,23 @@ function tdoa=tdoa_make_plot(input, tdoa, plot_info)
     k += length(lon);
   end
 
+  f=@(dist, rE,h) 2*sqrt((rE+h)**2 + rE**2 - 2*rE*(rE+h)*cos(dist/rE/2));
+
   ## (2) compute time differences to each grid point
   n = length(input);
+  height = 110;
+  height = 200;
+  height = 350;
+  max_skip = 2100;
+  max_skip = 3400;
   for i=1:n
-    dt{i} = deg2km(distance(input(i).coord, a))/299792.458;
+    dist  = deg2km(distance(input(i).coord, a));
+    dt{i} =   f(dist,     6371, height)/299792.458;
+    for j=1:4
+      b = dist>j*max_skip*0.9**(j-1);
+      dt{i}(b) = (j+1)*f(dist(b)/(j+1),6371, height)/299792.458;
+    end
+    dt{i} = dist/299792.458;
   end
 
   ## (3) compute number of std deviations for each pair of receivers for each grid point
@@ -39,14 +52,27 @@ function tdoa=tdoa_make_plot(input, tdoa, plot_info)
       fprintf(fid, '%g %g %g\n', [a(idx,1:2) sqrt(tdoa(i,j).h(idx))]');
       fclose(fid);
       [fid, tdoa(i,j).cn] = mkstemp('coord-XXXXXX', 'delete');
+      fid_circles = -1;
       if isfield(plot_info, 'known_location')
         for k=1:length(plot_info.known_location)
-          fprintf(fid, '%f %f %s\n', plot_info.known_location(k).coord, plot_info.known_location(k).name);
+          fprintf(fid, '%f %f "%s"\n', plot_info.known_location(k).coord, plot_info.known_location(k).name);
+          if isfield(plot_info.known_location(k), 'dist')
+            if fid_circles == -1
+              [fid_circles, tdoa(i,j).ccn] = mkstemp('circles-XXXXXX', 'delete');
+            end
+            [clat, clon] = plot_circle(plot_info.known_location(k));
+            fprintf(fid_circles, '%f %f\n', [clat' clon']');
+            fprintf(fid_circles, '\n');
+          end
         end
       end
       fprintf(fid, '%f %f %s\n', input(i).coord, input(i).name);
       fprintf(fid, '%f %f %s\n', input(j).coord, input(j).name);
       fclose(fid);
+      if fid_circles != -1
+        fclose(fid_circles);
+      end
+
       b = tdoa(i,j).lags_filter;
       tdoa(i,j).title   = sprintf('%s-%s:  dt=%.0fus RMS(dt)=%.0fus',
                                   input(i).name, input(j).name, mean(tdoa(i,j).lags(b))*1e6, std(tdoa(i,j).lags(b))*1e6);
@@ -54,22 +80,40 @@ function tdoa=tdoa_make_plot(input, tdoa, plot_info)
       tdoa(i,j).yrange  = [min(a(:,1)), max(a(:,1))];
       tdoa(i,j).cbrange = [0 20];
       tdoa(i,j).cblabel = 'sigma';
-      hSum             += tdoa(i,j).h;
+      if i==1 && j==2
+        hSum = tdoa(i,j).h;
+        ## hSum = tdoa(i,j).h;
+      else
+        hSum += tdoa(i,j).h;
+        ## hSum = min(hSum, tdoa(i,j).h);
+      end
     end
   end
   allnames(allnames==" ") = '-';
 
   ## (4) compute chi2 for all pairs of receivers for each grid point
   [fid, tdoa(n-1,2).cn] = mkstemp('coord-XXXXXX', 'delete');
+  fid_circles = -1;
   if isfield(plot_info, 'known_location')
     for k=1:length(plot_info.known_location)
-      fprintf(fid, '%f %f %s\n', plot_info.known_location(k).coord, plot_info.known_location(k).name);
+      fprintf(fid, '%f %f "%s"\n', plot_info.known_location(k).coord, plot_info.known_location(k).name);
+      if isfield(plot_info.known_location(k), 'dist')
+        if fid_circles == -1
+          [fid_circles, tdoa(n-1,2).ccn] = mkstemp('circles-XXXXXX', 'delete');
+        end
+        [clat, clon] = plot_circle(plot_info.known_location(k));
+        fprintf(fid_circles, '%f %f\n', [clat' clon']');
+        fprintf(fid_circles, '\n');
+      end
     end
   end
   for i=1:n
     fprintf(fid, '%f %f %s\n', input(i).coord, input(i).name);
   end
   fclose(fid);
+  if fid_circles != -1
+    fclose(fid_circles);
+  end
 
   [fid, tdoa(n-1,2).dn] = mkstemp('data-XXXXXX', 'delete');
   fprintf(fid, '%f %f %f\n', [a(:,1:2) min(20, sqrt(hSum)/n)]');
@@ -78,6 +122,9 @@ function tdoa=tdoa_make_plot(input, tdoa, plot_info)
   [fid, tdoa(n-1,2).dns] = mkstemp('data-XXXXXX', 'delete');
   fprintf(fid, '%g %g %g\n', [a(idx,1:2) sqrt(hSum(idx))/n]');
   fclose(fid);
+  [_min, idx]= min(sqrt(hSum)/n)
+  a(idx,1:2)
+  
   tdoa(n-1,2).title   = allnames(2:end);
   tdoa(n-1,2).xrange  = [min(a(:,2)), max(a(:,2))];
   tdoa(n-1,2).yrange  = [min(a(:,1)), max(a(:,1))];
@@ -119,6 +166,9 @@ function do_plot(plot_data, plot_filename, plot_contour, plot_title)
       fprintf(fid, 'set cblabel "%s"\n', plot_data(i,j).cblabel);
       fprintf(fid, 'set title   "%s"\n', plot_data(i,j).title);
       fprintf(fid, 'set grid\n');
+      cmd = sprintf('plot "%s" using 2:1:3 w image t "", "<bzip2 -dc coastline/world_10m.txt.bz2" with lines linestyle 1 lc "gray" not, "%s" using 2:1:3 w labels font ",12" offset .3,.3 point pt 71 lc "blue" not',
+                    plot_data(i,j).dn, plot_data(i,j).cn);
+
       if plot_contour
         fprintf(fid, 'set contour\n');
         fprintf(fid, 'unset surface\n');
@@ -133,11 +183,18 @@ function do_plot(plot_data, plot_filename, plot_contour, plot_title)
         fprintf(fid, 'unset table\n');
         fprintf(fid, 'unset contour\n');
 
-        fprintf(fid, 'plot "%s" using 2:1:3 w image t "", "<bzip2 -dc coastline/world_10m.txt.bz2" with lines linestyle 1 lc "gray" t "", "%s" using 2:1:3 w labels font ",12" offset .3,.3 point pt 71 lc "blue" not, "%s" u 1:($3<19 ? $2 : 1/0) lc 0 w l not, "<awk %s//{if ((NR%%160)==0 && $3<19){print}}%s %s" w labels font ",9" tc "gray" not\n',
-                plot_data(i,j).dn, plot_data(i,j).cn, cntr_name, "'", "'", cntr_name);
-      else
-        fprintf(fid, 'plot "%s" using 2:1:3 w image t "", "<bzip2 -dc coastline/world_10m.txt.bz2" with lines linestyle 1 lc "gray" t "", "%s" using 2:1:3 w labels font ",12" offset .3,.3 point pt 71 lc "blue" not\n', plot_data(i,j).dn, plot_data(i,j).cn);
+        cmd = [cmd sprintf(', "%s" u 1:($3<19 ? $2 : 1/0) lc 0 w l not, "<awk %s//{if ((NR%%160)==0 && $3<19){print}}%s %s" w labels font ",9" tc "gray" not',
+                           cntr_name, "'", "'", cntr_name)];
+        ##   fprintf(fid, 'plot "%s" using 2:1:3 w image t "", "<bzip2 -dc coastline/world_10m.txt.bz2" with lines linestyle 1 lc "gray" t "", "%s" using 2:1:3 w labels font ",12" offset .3,.3 point pt 71 lc "blue" not, "%s" u 1:($3<19 ? $2 : 1/0) lc 0 w l not, "<awk %s//{if ((NR%%160)==0 && $3<19){print}}%s %s" w labels font ",9" tc "gray" not\n',
+        ##           plot_data(i,j).dn, plot_data(i,j).cn, cntr_name, "'", "'", cntr_name);
+        ## else
+        ##   fprintf(fid, 'plot "%s" using 2:1:3 w image t "", "<bzip2 -dc coastline/world_10m.txt.bz2" with lines linestyle 1 lc "gray" t "", "%s" using 2:1:3 w labels font ",12" offset .3,.3 point pt 71 lc "blue" not\n', plot_data(i,j).dn, plot_data(i,j).cn);
       end
+      if isfield(plot_data(i,j), 'ccn')
+        cmd = [cmd sprintf(', "%s" using 2:1 w l lw 3 lc "blue" not', plot_data(i,j).ccn)];
+      end
+
+      fprintf(fid, '%s\n', cmd);
     end
   end
   fprintf(fid, 'unset multiplot\n');
@@ -145,3 +202,20 @@ function do_plot(plot_data, plot_filename, plot_contour, plot_title)
   system(sprintf('gnuplot < %s', name));
 endfunction
 
+function [lat,lon]=plot_circle(s)
+  lat1 = s.coord(1)/180*pi;
+  lon1 = s.coord(2)/180*pi;
+  d    = s.dist/6371.2; # radial distance
+
+  tc=0:2*pi/100:2*pi;
+  for i=1:length(tc)
+    lat(i) = asin(sin(lat1)*cos(d)+cos(lat1)*sin(d)*cos(tc(i)));
+    if cos(lat(i))==0
+      lon(i) = lon1;
+    else
+      lon(i) = mod(lon1-asin(sin(tc(i))*sin(d)/cos(lat(i)))+pi,2*pi)-pi;
+    end
+  end
+  lat *= 180/pi;
+  lon *= 180/pi;
+endfunction

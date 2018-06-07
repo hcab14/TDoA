@@ -1,0 +1,1 @@
+d.HB9RYZ = struct('coord', [47.1721, 8.42683], 'host', 'hb9ryz.homeip.net', 'port', 8073);

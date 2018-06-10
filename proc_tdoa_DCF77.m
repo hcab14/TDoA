@@ -26,13 +26,14 @@ function [tdoa,input]=proc_tdoa_DCF77
     end
   end
 
-  tdoa = tdoa_make_plot(input, tdoa, struct('lat', [ 40:0.05:60],
-                                            'lon', [ -5:0.05:16],
-                                            'plotname', 'TDoA_77.5',
-                                            'title', '77.5 kHz 20171127T1041Z',
-                                            'known_location', struct('coord', [50.0152 9.0112],
-                                                                     'name',  'DCF77')
-                                           ));
-  tdoa = tdoa_plot_dt(input, tdoa, 2.5e-3, '77.5 kHz 20171127T1041Z');
+  plot_info = struct('lat', [ 40:0.05:60],
+                     'lon', [ -5:0.05:16],
+                     'plotname', 'TDoA_77.5',
+                     'title', '77.5 kHz 20171127T1041Z',
+                     'known_location', struct('coord', [50.0152 9.0112],
+                                              'name',  'DCF77')
+                    );
+  tdoa = tdoa_make_plot(input, tdoa, plot_info);
+  tdoa = tdoa_plot_dt(input, tdoa, plot_info, 2.5e-3);
   print png/TDoA_77.5_dt.png -dpng
 endfunction

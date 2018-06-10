@@ -1,7 +1,7 @@
 ## -*- octave -*-
 
 function tdoa=tdoa_plot_dt(input, tdoa, plot_info, dt)
-  figure(2, 'position', [100,100, 900, 600]);
+  figure(2, 'position', [200,200, 900,600]);
   colormap('default');
 
   bin_width = 0.25/12001;

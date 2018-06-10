@@ -33,7 +33,8 @@ function [tdoa,input]=proc_tdoa_DCF77
                      'known_location', struct('coord', [50.0152 9.0112],
                                               'name',  'DCF77')
                     );
-  tdoa = tdoa_make_plot(input, tdoa, plot_info);
-  tdoa = tdoa_plot_dt(input, tdoa, plot_info, 2.5e-3);
-  print png/TDoA_77.5_dt.png -dpng
+
+  tdoa = tdoa_plot_map(input, tdoa, plot_info);
+  tdoa = tdoa_plot_dt (input, tdoa, plot_info, 2.5e-3);
+
 endfunction

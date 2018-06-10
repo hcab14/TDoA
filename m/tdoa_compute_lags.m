@@ -4,10 +4,12 @@ function tdoa=tdoa_compute_lags(input, peak_search)
   n = length(input);
   for i=1:n
     for j=i+1:n
+      tic;
       [tdoa(i,j).lags, tdoa(i,j).peaks, tdoa(i,j).t, tdoa(i,j).r, tdoa(i,j).gpssec] = ...
       compute_lag(input(i).t, input(i).z, input(i).fs,
                   input(j).t, input(j).z, input(j).fs,
                   peak_search);
+      printf("tdoa_compute_lags(%d,%d) %.2f sec\n", i,j,toc());
     end
   end
 endfunction

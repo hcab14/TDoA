@@ -9,6 +9,7 @@ function tdoa=tdoa_plot_dt(input, tdoa, plot_info, dt)
   n = length(input);
   for i=1:n
     for j=i+1:n
+      tic;
       subplot(n-1,n-1, (n-1)*(i-1)+j-1);
       ny   = length(tdoa(i,j).t);
       tmm  = [min(tdoa(i,j).t{1}) max(tdoa(i,j).t{1})];
@@ -41,6 +42,7 @@ function tdoa=tdoa_plot_dt(input, tdoa, plot_info, dt)
       plot(1e3*tdoa(i,j).lags(b), tdoa(i,j).gpssec(b), '*r');#, 'markersize', 0.1, 'markerfacecolor', 'none');
       plot(1e3*tdoa(i,j).lags(b), tdoa(i,j).gpssec(b), '*r');#, 'markersize', 0.1, 'markerfacecolor', 'none');
       hold off;
+      printf('tdoa_plot_dt(%d,%d) %.2f sec\n', i,j, toc());
     end
   end
   ha = axes('Position',[0 0 1 1],'Xlim',[0 1],'Ylim',[0  1],'Box','off','Visible','off','Units','normalized', 'clipping' , 'off');

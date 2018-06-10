@@ -18,8 +18,8 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
   for i=1:n
     allnames = [input_data(i).name '-' allnames];
     for j=1+i:n
+      tic;
       subplot(n-1,n-1, (n-1)*(i-1)+j-1);
-      printf('%d,%d, %d\n', i,j, (n-1)*(i-1)+j-1);
 
       b = tdoa(i,j).lags_filter;
       titlestr = { sprintf('%s-%s', input_data(i).name, input_data(j).name),
@@ -29,15 +29,16 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
                reshape(sqrt(tdoa(i,j).h), length(plot_info.lon), length(plot_info.lat))',
                titlestr,
                coastlines,
-              false);
-      plot_location(input_data(i).coord, input_data(i).name, false);
-      plot_location(input_data(j).coord, input_data(j).name, false);
+               false);
+      printf('tdoa_plot_map(%d,%d) %.2f sec\n', i,j, toc());
     end
   end
 
   for i=1:n
     for j=1+i:n
       subplot(n-1,n-1, (n-1)*(i-1)+j-1);
+      plot_location(input_data(i).coord, input_data(i).name, false);
+      plot_location(input_data(j).coord, input_data(j).name, false);
       set(colorbar(), 'XLabel', '\sigma')
     end
   end
@@ -55,6 +56,7 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
       error(sprintf('n=%d is not supported'));
   end
 
+  tic;
   plot_map(plot_info,
            reshape(sqrt(hSum)/n, length(plot_info.lon), length(plot_info.lat))',
            allnames(1:end-1),
@@ -66,6 +68,7 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
   end
 
   set(colorbar(),'XLabel', '\chi^2/ndf')
+  printf('tdoa_plot_map_combined %.2f sec\n', toc());
 
   ha = axes('Position',[0 0 1 1],'Xlim',[0 1],'Ylim',[0  1],'Box','off','Visible','off','Units','normalized', 'clipping' , 'off');
   text(0.5, 0.98,  plot_info.title, 'fontweight', 'bold', 'horizontalalignment', 'center', 'fontsize', 15);

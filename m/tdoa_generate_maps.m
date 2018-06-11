@@ -13,23 +13,14 @@ function [tdoa,hSum]=tdoa_generate_maps(input, tdoa, plot_info)
     k += length(lon);
   end
 
-  f=@(dist, rE,h) 2*sqrt((rE+h)**2 + rE**2 - 2*rE*(rE+h)*cos(dist/rE/2));
-
   ## (2) compute time differences to each grid point
   n = length(input);
-  height = 110;
-  height = 200;
-  height = 350;
-  max_skip = 2100;
-  max_skip = 3400;
   for i=1:n
-    dist  = deg2km(distance(input(i).coord, a));
-    dt{i} =   f(dist,     6371, height)/299792.458;
-    for j=1:4
-      b = dist>j*max_skip*0.9**(j-1);
-      dt{i}(b) = (j+1)*f(dist(b)/(j+1),6371, height)/299792.458;
+    if isfield(input, 'dt_map')
+      dt{i} = interp2(input(i).dt_map.lon, input(i).dt_map.lat, input(i).dt_map.dt, a(:,2), a(:,1), 'pchip');
+    else
+      dt{i} = deg2km(distance(input(i).coord, a))/299792.458;
     end
-    dt{i} = dist/299792.458;
   end
 
 

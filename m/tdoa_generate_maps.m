@@ -19,7 +19,7 @@ function [tdoa,hSum]=tdoa_generate_maps(input, tdoa, plot_info)
     if isfield(input, 'dt_map')
       dt{i} = interp2(input(i).dt_map.lon, input(i).dt_map.lat, input(i).dt_map.dt, a(:,2), a(:,1), 'pchip');
     else
-      dt{i} = deg2km(distance(input(i).coord, a))/299792.458;
+      dt{i} = 6371*distance_rad(input(i).coord, a)/299792.458;
     end
   end
 

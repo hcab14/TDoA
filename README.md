@@ -7,7 +7,7 @@
 
 ## Prerequisites
 * This code should work on linux and on OSX
-* Install octave + signal and mapping packages: in octave: `pkg install -forge signal` `pkg install -forge mapping`
+* Install octave + signal package: in octave: `pkg install -forge signal`
 * Install gnuplot: version 5.2 does work, earlier versions are not tested and may not work
 
 ## Download / Installation

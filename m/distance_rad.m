@@ -12,5 +12,11 @@ function d=distance_rad(ll1, ll2)
   if size(b,1) == 1 && size(a,1) != 1
     b = ones(size(a,1),1) * b;
   end
-  d = acos(min(dot(a,b,2), 1));
+  d = safe_acos(dot(a,b,2));
+endfunction
+
+function y=safe_acos(x)
+  b    = abs(x) > 1;
+  x(b) = sign(x(b));
+  y    = acos(x);
 endfunction

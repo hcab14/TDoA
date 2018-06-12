@@ -2,3 +2,5 @@
 *.o
 *~
 octave-workspace
+*.m
+.DS_Store

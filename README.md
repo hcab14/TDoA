@@ -11,7 +11,8 @@
 * Install gnuplot: version 5.2 does work, earlier versions are not tested and may not work
 
 ## Download / Installation
-* `git clone --recursive  https://github.com/hcab14/TDoA.git`
+* Initial checkout: `git clone --recursive  https://github.com/hcab14/TDoA.git`
+* Update to latest master branch: `git pull --recurse-submodules`
 * For now everything is contained in the git repository, i.e., nothing is installed in /usr etc.
 
 ## Running the example octave script

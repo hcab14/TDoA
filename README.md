@@ -7,8 +7,7 @@
 
 ## Prerequisites
 * This code should work on linux and on OSX
-* Install octave + signal package: in octave: `pkg install -forge signal`
-* Install gnuplot: version 5.2 does work, earlier versions are not tested and may not work
+* Install octave (>=4.2.2) + signal package: in octave: `pkg install -forge signal`
 
 ## Download / Installation
 * Initial checkout: `git clone --recursive  https://github.com/hcab14/TDoA.git`

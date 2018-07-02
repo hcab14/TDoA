@@ -2,9 +2,9 @@
 
 function [tdoa,input]=proc_tdoa_DCF77
 
-  input(1).fn    = 'iq/20171127T104156Z_77500_HB9RYZ_iq.wav';
-  input(2).fn    = 'iq/20171127T104156Z_77500_F1JEK_iq.wav';
-  input(3).fn    = 'iq/20171127T104156Z_77500_DF0KL_iq.wav';
+  input(1).fn    = ['iq' filesep() '20171127T104156Z_77500_HB9RYZ_iq.wav'];
+  input(2).fn    = ['iq' filesep() '20171127T104156Z_77500_F1JEK_iq.wav'];
+  input(3).fn    = ['iq' filesep() '20171127T104156Z_77500_DF0KL_iq.wav'];
 
   input = tdoa_read_data(input);
 
@@ -28,8 +28,8 @@ function [tdoa,input]=proc_tdoa_DCF77
 
   plot_info = struct('lat', [ 40:0.05:60],
                      'lon', [ -5:0.05:16],
-                     'plotname', 'TDoA_77.5',
-                     'title', '77.5 kHz 20171127T1041Z',
+                     'plotname', sprintf('TDoA_%g', input(1).freq),
+                     'title', sprintf('%g kHz %s', input(1).freq, input(1).time),
                      'known_location', struct('coord', [50.0152 9.0112],
                                               'name',  'DCF77')
                     );

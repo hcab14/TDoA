@@ -1,4 +1,3 @@
-addpath ("./m")
-addpath ("./kiwiclient")
+addpath (['m' pathsep 'kiwiclient'])
 #mkoctfile kiwiclient/read_kiwi_iq_wav.cc
 pkg load signal

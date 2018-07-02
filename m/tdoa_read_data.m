@@ -3,7 +3,10 @@
 function input=tdoa_read_data(input)
   n = length(input);
   for i=1:n
-    input(i).name    = get_name(input(i).fn);
+    [name,time,freq] = parse_iq_filename(input(i).fn);
+    input(i).name    = name;
+    input(i).time    = time;
+    input(i).freq    = freq;
     input(i).coord   = get_coord(input(i).name);
     [x,xx,fs,gpsfix] = proc_kiwi_iq_wav(input(i).fn, 255);
     input(i).t       = cat(1,xx.t)(1000:end);
@@ -23,13 +26,19 @@ function input=tdoa_read_data(input)
   end
 endfunction
 
-function name=get_name(fn)
-  ## fn='iq/20171206T201521Z_5613000_iqG8JNJ.wav'
-
-  fn   = fn(4:end)                      ## remove trailing 'iq/'
-  idx  = strfind(fn, '_')(2:3) + [1 -1];
-  name = fn(idx(1):idx(2));
-  if name(1) == '_'
-    name(1) = [];
+function [name,time,freq]=parse_iq_filename(fn)
+  [dir, filename, ext] = fileparts(fn);
+  if ~strcmp(ext, '.wav')
+    error(sprintf('wrong extension: %s'), fn);
   end
+  tokens = strsplit(filename, '_');
+  if length(tokens) < 4
+    error(sprintf('malformed filename: %s'), fn);
+  end
+  if ~strcmp(tokens{4}, 'iq')
+    error(sprintf('filename does not indicate an IQ recording: %s'), fn);
+  end
+  time = tokens{1};
+  freq = 1e-3 * str2double(tokens{2});
+  name = tokens{3};
 end

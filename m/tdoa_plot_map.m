@@ -73,8 +73,8 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
   ha = axes('Position',[0 0 1 1],'Xlim',[0 1],'Ylim',[0  1],'Box','off','Visible','off','Units','normalized', 'clipping' , 'off');
   text(0.5, 0.98,  plot_info.title, 'fontweight', 'bold', 'horizontalalignment', 'center', 'fontsize', 15);
 
-  print('-dpng','-S900,600', [png filesep() sprintf('%s.png', plot_info.plotname)]);
-  print('-dpdf','-S900,600', [pdf filesep() sprintf('%s.pdf', plot_info.plotname)]);
+  print('-dpng','-S900,600', fullfile('png', sprintf('%s.png', plot_info.plotname)));
+  print('-dpdf','-S900,600', fullfile('pdf', sprintf('%s.pdf', plot_info.plotname)));
 endfunction
 
 function plot_map(plot_info, h, titlestr, coastlines, do_plot_contour)
@@ -97,10 +97,10 @@ function plot_map(plot_info, h, titlestr, coastlines, do_plot_contour)
   end
 
   if do_plot_contour
-    [_m, _i] = min(h);
-    [_mm, _j] = min(_m)
-    _i = _i(_j)
-    [plot_info.lon(_j) plot_info.lat(_i)]
+    [_m,  _i] = min(h);
+    [_mm, _j] = min(_m);
+    _i = _i(_j);
+    printf('most likely position: lon = %.2f deg  lat = %.2f deg\n', plot_info.lon(_j), plot_info.lat(_i));
   end
 end
 

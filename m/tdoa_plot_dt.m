@@ -48,7 +48,7 @@ function tdoa=tdoa_plot_dt(input, tdoa, plot_info, dt)
   ha = axes('Position',[0 0 1 1],'Xlim',[0 1],'Ylim',[0  1],'Box','off','Visible','off','Units','normalized', 'clipping' , 'off');
   text(0.5, 0.98,  plot_info.title, 'fontweight', 'bold', 'horizontalalignment', 'center', 'fontsize', 15);
 
-  print('-dpng','-S900,600', [png filesep() sprintf('%s_dt.png', plot_info.plotname)]);
-  print('-dpdf','-S900,600', [pdf filesep() sprintf('%s_dt.pdf', plot_info.plotname)]);
+  print('-dpng','-S900,600', fullfile('png', sprintf('%s_dt.png', plot_info.plotname)));
+  print('-dpdf','-S900,600', fullfile('pdf', sprintf('%s_dt.pdf', plot_info.plotname)));
 endfunction
 

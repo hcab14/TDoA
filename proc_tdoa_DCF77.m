@@ -2,9 +2,9 @@
 
 function [tdoa,input]=proc_tdoa_DCF77
 
-  input(1).fn    = ['iq' filesep() '20171127T104156Z_77500_HB9RYZ_iq.wav'];
-  input(2).fn    = ['iq' filesep() '20171127T104156Z_77500_F1JEK_iq.wav'];
-  input(3).fn    = ['iq' filesep() '20171127T104156Z_77500_DF0KL_iq.wav'];
+  input(1).fn    = fullfile('iq', '20171127T104156Z_77500_HB9RYZ_iq.wav');
+  input(2).fn    = fullfile('iq', '20171127T104156Z_77500_F1JEK_iq.wav');
+  input(3).fn    = fullfile('iq', '20171127T104156Z_77500_DF0KL_iq.wav');
 
   input = tdoa_read_data(input);
 

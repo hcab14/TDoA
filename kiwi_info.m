@@ -1,7 +1,7 @@
 ## -*- octave -*-
 
-function d=kiwi_info()
-  [_,a]=system('cat gnss_pos/*.txt');
+function d=kiwi_info(dir)
+  [_,a]=system(sprintf('cat %s/*.txt', dir));
+  #printf('kiwi_info: %s\n', a);
   eval(a);
 end
-

@@ -13,7 +13,18 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
   set(0,'defaultaxesposition', [0.05, 0.05, 0.9, 0.9]);
   figure(1, 'position', [100,100, 900,600]);
 
+
   n = length(input_data);
+
+  if ~isfield(plot_info, 'known_location')
+    most_likely_pos = get_most_likely_pos(plot_info,
+                                          reshape(sqrt(hSum)/n,
+                                                  length(plot_info.lon),
+                                                  length(plot_info.lat))');
+    plot_info.known_location.coord = most_likely_pos;
+    plot_info.known_location.name  = sprintf('%.2fN %.2fE', most_likely_pos);
+  end
+
   allnames = '';
   for i=1:n
     allnames = [input_data(i).name '-' allnames];
@@ -77,6 +88,14 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
   print('-dpdf','-S900,600', fullfile('pdf', sprintf('%s.pdf', plot_info.plotname)));
 endfunction
 
+function pos=get_most_likely_pos(plot_info, h)
+  [_m,  _i] = min(h);
+  [_mm, _j] = min(_m);
+  _i = _i(_j);
+  pos = [plot_info.lat(_i) plot_info.lon(_j)];
+  printf('most likely position: lat = %.2f deg  lon = %.2f deg\n', pos);
+endfunction
+
 function plot_map(plot_info, h, titlestr, coastlines, do_plot_contour)
   imagesc(plot_info.lon([1 end]), plot_info.lat([1 end]), h, [0 20]);
   set(gca,'YDir','normal');
@@ -96,16 +115,10 @@ function plot_map(plot_info, h, titlestr, coastlines, do_plot_contour)
     end
   end
 
-  if do_plot_contour
-    [_m,  _i] = min(h);
-    [_mm, _j] = min(_m);
-    _i = _i(_j);
-    printf('most likely position: lon = %.2f deg  lat = %.2f deg\n', plot_info.lon(_j), plot_info.lat(_i));
-  end
 end
 
 function plot_location(coord, label, is_known_location)
-  markers = { 'b*', 'k*' };
+  markers = { 'b*', 'kx' };
   colors  = { 'blue', 'black' };
   plot(coord(2), coord(1), markers{1+is_known_location});
   texthandle = text(coord(2), coord(1), label,

@@ -35,8 +35,8 @@ function [lags,peaks,ts,rs,gpssec]=compute_lag(t1,z1,fs1, t2,z2,fs2, peak_search
 
     time_of_lag = peak_search.fn(t(j+dk), ar(j+dk));
 
-#    fprintf(stdout, 'lag: %5d %12.6f [%f %f %f]\n', lag(j), time_of_lag, ar(j-1:j+1)/ar(j));
-#    fflush(stdout);
+    ## fprintf(stdout, 'lag: %5d %12.6f [%f %f %f]\n', lag(j), time_of_lag, ar(j-1:j+1)/(1e-10 + ar(j)));
+    ## fflush(stdout);
     lags(end+1) = time_of_lag;
 
     ts{end+1}     = t(idx);

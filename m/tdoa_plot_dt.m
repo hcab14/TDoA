@@ -18,7 +18,7 @@ function tdoa=tdoa_plot_dt(input, tdoa, plot_info, dt)
       a    = zeros(ny,nx);
       for k=1:ny
         a(k,:)  = interp1(tdoa(i,j).t{k}, abs(tdoa(i,j).r{k}), bins);
-        a(k,:) /= max(abs(a(k,:)));
+        a(k,:) /= (1e-10 + max(abs(a(k,:))));
       end
       tdoa(i,j).bins = bins;
       imagesc(1e3*bins, tdoa(i,j).gpssec, a);

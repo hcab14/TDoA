@@ -28,11 +28,15 @@ function [tdoa,hSum]=tdoa_generate_maps(input, tdoa, plot_info)
   hSum      = zeros(size(dt{1}));
   for i=1:n
     for j=1+i:n
-      b = tdoa(i,j).lags_filter;
-      xlag = sum(tdoa(i,j).peaks(b).**2 .* tdoa(i,j).lags(b))              / sum(tdoa(i,j).peaks(b).**2);
-      slag = sum(tdoa(i,j).peaks(b).**2 .* (tdoa(i,j).lags(b) - xlag).**2) / sum(tdoa(i,j).peaks(b).**2);
       tdoa(i,j).a = a;
-      tdoa(i,j).h = (dt{i}-dt{j}-xlag).**2 / slag;
+      b = tdoa(i,j).lags_filter;
+      if sum(b)==0
+        tdoa(i,j).h = 20**2 * ones(size(hSum));
+      else
+        xlag = sum(tdoa(i,j).peaks(b).**2 .* tdoa(i,j).lags(b))              / sum(tdoa(i,j).peaks(b).**2);
+        slag = sum(tdoa(i,j).peaks(b).**2 .* (tdoa(i,j).lags(b) - xlag).**2) / sum(tdoa(i,j).peaks(b).**2);
+        tdoa(i,j).h = (dt{i}-dt{j}-xlag).**2 / slag;
+      end
       if isequal([i j], [1 2])
         hSum  = tdoa(i,j).h;
       else

@@ -22,7 +22,7 @@ function [tdoa,input]=proc_tdoa_DCF77
                                          ));
   for i=1:n
     for j=i+1:n
-      tdoa(i,j).lags_filter = ones(size(tdoa(i,j).gpssec))==1;
+      tdoa(i,j).lags_filter = tdoa_remove_outliers(ones(size(tdoa(i,j).gpssec))==1, tdoa(i,j).lags);
     end
   end
 

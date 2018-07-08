@@ -10,9 +10,9 @@ function tdoa=tdoa_plot_map_kiwi(input_data, tdoa, plot_info)
 
   coastlines = load('coastline/world_50m.mat').c;
 
-  set(0,'defaultaxesposition', [0.05, 0.05, 0.9, 0.9]);
+  set(0, 'defaultaxesposition', [0.05, 0.05, 0.95, 0.87]);
   figure(1, 'position', [100,100, 1024,690]);
-  
+
   set (0, "defaultaxesfontsize", 12)
   set (0, "defaulttextfontsize", 16)
 
@@ -21,6 +21,7 @@ function tdoa=tdoa_plot_map_kiwi(input_data, tdoa, plot_info)
   for i=1:n
     allnames = [input_data(i).name '-' allnames];
     for j=1+i:n
+      clf;
       tic;
       b = tdoa(i,j).lags_filter;
       titlestr = { sprintf('%s-%s', input_data(i).name, input_data(j).name),
@@ -40,6 +41,7 @@ function tdoa=tdoa_plot_map_kiwi(input_data, tdoa, plot_info)
     end
   end
 
+  clf;
   tic;
   plot_map(plot_info,
            reshape(sqrt(hSum)/n, length(plot_info.lon), length(plot_info.lat))',
@@ -87,6 +89,7 @@ function plot_location(coord, label, is_known_location)
   plot(coord(2), coord(1), markers{1+is_known_location});
   # orig fontsize 7.5
   texthandle = text(coord(2), coord(1), label,
+                    'fontsize', 16, ...
                     'color', colors{1+is_known_location}, 'horizontalalignment', 'center', 'verticalalignment', 'baseline');
   extent = get(texthandle, 'extent');
   set(texthandle, 'position', extent(1:2) + extent(3:4)/2);

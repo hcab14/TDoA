@@ -1,7 +1,7 @@
 ## -*- octave -*-
 
-function d=kiwi_info()
-  files = glob(['gnss_pos' filesep() '*.txt']);
+function d=kiwi_info(dir)
+  files = glob([dir filesep() '*.txt']);
   for i=1:length(files)
     try
       source(files{i});
@@ -10,4 +10,3 @@ function d=kiwi_info()
     end_try_catch
   end
 end
-

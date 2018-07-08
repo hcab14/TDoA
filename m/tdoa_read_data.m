@@ -1,21 +1,37 @@
 ## -*- octave -*-
 
-function input=tdoa_read_data(input)
+function [err,input]=tdoa_read_data(input, dir)
+  err = 0;
   n = length(input);
   for i=1:n
-    [name,time,freq] = parse_iq_filename(input(i).fn);
-    input(i).name    = name;
-    input(i).time    = time;
-    input(i).freq    = freq;
-    input(i).coord   = get_coord(input(i).name);
+    [input(i).name, ...
+     input(i).vname, ...
+     input(i).fname, ...
+     input(i).time, ...
+     input(i).freq]  = parse_iq_filename(input(i).fn);
+    input(i).coord   = get_coord(input(i).vname, dir);
     [x,xx,fs,gpsfix] = proc_kiwi_iq_wav(input(i).fn, 255);
+    input(i).gpsfix  = gpsfix;
+
+    if gpsfix == 255
+      printf('no GPS timestamps: %s\n', input(i).fn);
+      err = 3;
+      return
+    end
+
+    if gpsfix == 254
+      printf('no recent GPS timestamps: %s\n', input(i).fn);
+      err = 4;
+      return
+    end
+
     input(i).t       = cat(1,xx.t)(1000:end);
     tmin(i)          = min(input(i).t);
     tmax(i)          = max(input(i).t);
     input(i).z       = cat(1,xx.z)(1000:end);
     input(i).gpssec  = cat(1,x.gpssec)+1e-9*cat(1,x.gpsnsec);
     input(i).fs      = 512/mean(diff(input(i).gpssec)(2:end));
-    printf('%-40s %3d\n', input(i).fn, gpsfix);
+    printf('%-40s %s %3d\n', input(i).fn, input(i).name, gpsfix);
   end
   t0 = max(tmin);
   t1 = min(tmax);
@@ -26,8 +42,9 @@ function input=tdoa_read_data(input)
   end
 endfunction
 
-function [name,time,freq]=parse_iq_filename(fn)
-  [dir, filename, ext] = fileparts(fn);
+# e.g. fn = '../files/02697/20180707T211018Z_77500_F1JEK-P_iq.wav'
+function [name,vname,fname,time,freq]=parse_iq_filename(fn)
+  [_, filename, ext] = fileparts(fn);
   if ~strcmp(ext, '.wav')
     error(sprintf('wrong extension: %s'), fn);
   end
@@ -38,7 +55,9 @@ function [name,time,freq]=parse_iq_filename(fn)
   if ~strcmp(tokens{4}, 'iq')
     error(sprintf('filename does not indicate an IQ recording: %s'), fn);
   end
-  time = tokens{1};
-  freq = 1e-3 * str2double(tokens{2});
-  name = tokens{3};
+  time  = tokens{1};
+  freq  = 1e-3 * str2double(tokens{2});
+  fname = tokens{3};
+  name  = strrep(fname, '-', '/');            ## recover encoded slashes
+  vname = strrep(fname, '-', '_');
 end

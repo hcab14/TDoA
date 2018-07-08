@@ -6,7 +6,7 @@ function [tdoa,input]=proc_tdoa_DCF77
   input(2).fn    = fullfile('iq', '20171127T104156Z_77500_F1JEK_iq.wav');
   input(3).fn    = fullfile('iq', '20171127T104156Z_77500_DF0KL_iq.wav');
 
-  input = tdoa_read_data(input);
+  [_, input] = tdoa_read_data(input, 'gnss_pos');
 
   ## 200 Hz high-pass filter
   b = fir1(1024, 500/12000, 'high');

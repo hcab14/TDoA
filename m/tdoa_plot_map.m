@@ -9,8 +9,9 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
 
   [tdoa,hSum] = tdoa_generate_maps(input_data, tdoa, plot_info);
 
-  colormap([linspace(1,0,100)' linspace(0,1,100)' zeros(100,1)     ## red to green
-            linspace(0,1,100)' ones(100,1)   linspace(0,1,100)']); ## green to white
+  cmap = [linspace(1,0,100)' linspace(0,1,100)' zeros(100,1)     ## red to green
+            linspace(0,1,100)' ones(100,1)   linspace(0,1,100)']; ## green to white
+  colormap(cmap);
 
   coastlines = load('coastline/world_50m.mat').c;
 
@@ -55,8 +56,9 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
       titlestr = { sprintf('%s-%s %s', input_data(i).name, input_data(j).name, title_extra),
                    sprintf('dt=%.0fus RMS(dt)=%.0fus', mean(tdoa(i,j).lags(b))*1e6, std(tdoa(i,j).lags(b))*1e6)
                  };
+      h = reshape(sqrt(tdoa(i,j).h), length(plot_info.lon), length(plot_info.lat))';
       plot_map(plot_info,
-               reshape(sqrt(tdoa(i,j).h), length(plot_info.lon), length(plot_info.lat))',
+               h,
                titlestr,
                coastlines,
                false);
@@ -69,6 +71,8 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
               '-dpng', '-S1024,690');
         print(sprintf('%s/%s-%s map.pdf', plot_info.dir, input_data(i).fname, input_data(j).fname), ...
               '-dpng', '-S1024,690');
+        save_as_png_for_map(sprintf('%s/%s-%s_for_map.png', plot_info.dir, input_data(i).fname, input_data(j).fname),
+                            h, cmap);
       end
     end
   end
@@ -104,8 +108,9 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
     titlestr = [titlestr ' ' plot_info.title];
   end
 
+  h = reshape(sqrt(hSum)/n, length(plot_info.lon), length(plot_info.lat))';
   plot_map(plot_info,
-           reshape(sqrt(hSum)/n, length(plot_info.lon), length(plot_info.lat))',
+           h,
            titlestr,
            coastlines,
            true);
@@ -134,6 +139,7 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
   else
     print('-dpng','-S1024,690', sprintf('%s/%s.png', plot_info.dir, plot_info.plotname));
     print('-dpdf','-S1024,690', sprintf('%s/%s.pdf', plot_info.dir, plot_info.plotname));
+    save_as_png_for_map(sprintf('%s/%s_for_map.png', plot_info.dir, plot_info.plotname), h, cmap);
   end
 endfunction
 
@@ -165,6 +171,16 @@ function plot_map(plot_info, h, titlestr, coastlines, do_plot_contour)
   end
 
 end
+
+function save_as_png_for_map(filename, h, cmap)
+  n       = size(cmap,1);
+  h(h>20) = 20;
+  h = flipud(h);
+  h = fliplr(h);
+  rgb     = ind2rgb(1+round(h/20*(n-1)), cmap);
+  alpha   = 1*(h!=20);
+  imwrite(rgb, filename, 'Alpha', alpha);
+endfunction
 
 function plot_location(plot_info, coord, label, is_known_location)
   markers = { 'b*', 'kx' };

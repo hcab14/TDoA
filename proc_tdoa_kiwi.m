@@ -13,7 +13,7 @@ function [tdoa,input]=proc_tdoa_kiwi(dir, files, plot_info)
   end
 
   tdoa  = tdoa_compute_lags(input, struct('dt',     12000,            # 1-second cross-correlation intervals
-                                          'range',  0.005,            # peak search range is +-15 ms
+                                          'range',  0.015,            # peak search range is +-15 ms
                                           'dk',    [-2:2],            # use 5 points for peak fitting
                                           'fn', @tdoa_peak_fn_pol2fit # fit a pol2 to the peak
                                          ));

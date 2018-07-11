@@ -26,14 +26,14 @@ function [tdoa,input]=proc_tdoa_DCF77
     end
   end
 
-  plot_info = struct('lat', [ 40:0.05:60],
-                     'lon', [ -5:0.05:16],
+  plot_info = struct('lat', [ 45:0.05:55],
+                     'lon', [ -2:0.05:12],
                      'plotname', sprintf('TDoA_%g', input(1).freq),
                      'title', sprintf('%g kHz %s', input(1).freq, input(1).time),
                      'known_location', struct('coord', [50.0152 9.0112],
-                                              'name',  'DCF77')#,
-#                     'dir', 'png',
-#                     'plot_kiwi', true
+                                              'name',  'DCF77'),
+                     'dir', 'png',
+                     'plot_kiwi', true
                     );
 
   tdoa = tdoa_plot_map(input, tdoa, plot_info);

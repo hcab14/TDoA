@@ -13,7 +13,7 @@ function [tdoa,input]=proc_tdoa_kiwi(dir, files, plot_info)
   end
 
   tdoa  = tdoa_compute_lags(input, struct('dt',     12000,            # 1-second cross-correlation intervals
-                                          'range',  0.005,            # peak search range is +-5 ms
+                                          'range',  0.005,            # peak search range is +-15 ms
                                           'dk',    [-2:2],            # use 5 points for peak fitting
                                           'fn', @tdoa_peak_fn_pol2fit # fit a pol2 to the peak
                                          ));
@@ -28,6 +28,7 @@ function [tdoa,input]=proc_tdoa_kiwi(dir, files, plot_info)
   plot_info.plotname  = 'TDoA map';
   plot_info.title     = sprintf('%g kHz %s', input(1).freq, input(1).time);
   plot_info.plot_kiwi = true;
+  plot_info.coastlines = 'coastline/world_110m.mat'
 
   tdoa = tdoa_plot_map_kiwi(input, tdoa, plot_info);
   tdoa = tdoa_plot_dt_kiwi (input, tdoa, plot_info, 2.5e-3);

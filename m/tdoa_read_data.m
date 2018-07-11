@@ -12,18 +12,18 @@ function [err,input]=tdoa_read_data(input, dir)
     input(i).coord   = get_coord(input(i).vname, dir);
     [x,xx,fs,gpsfix] = proc_kiwi_iq_wav(input(i).fn, 255);
     input(i).gpsfix  = gpsfix;
-
+    fs
     if gpsfix == 255
       printf('no GPS timestamps: %s\n', input(i).fn);
       err = 3;
       return
     end
 
-    if gpsfix == 254
-      printf('no recent GPS timestamps: %s\n', input(i).fn);
-      err = 4;
-      return
-    end
+   if gpsfix == 254
+     printf('no recent GPS timestamps: %s\n', input(i).fn);
+     err = 4;
+     return
+   end
 
     input(i).t       = cat(1,xx.t)(1000:end);
     tmin(i)          = min(input(i).t);
@@ -32,6 +32,7 @@ function [err,input]=tdoa_read_data(input, dir)
     input(i).gpssec  = cat(1,x.gpssec)+1e-9*cat(1,x.gpsnsec);
     input(i).fs      = 512/mean(diff(input(i).gpssec)(2:end));
     printf('%-40s %s %3d\n', input(i).fn, input(i).name, gpsfix);
+
   end
   t0 = max(tmin);
   t1 = min(tmax);

@@ -28,7 +28,10 @@ function [tdoa,input]=proc_tdoa_kiwi(dir, files, plot_info)
   plot_info.plotname  = 'TDoA map';
   plot_info.title     = sprintf('%g kHz %s', input(1).freq, input(1).time);
   plot_info.plot_kiwi = true;
-  plot_info.coastlines = 'coastline/world_110m.mat'
+  plot_info.coastlines = 'coastline/world_110m.mat';
+
+  ### determine map resolution and create plot_info.lat and plot_info.lon fields
+  # plot_info = tdoa_autoresolution(plot_info);
 
   tdoa = tdoa_plot_map_kiwi(input, tdoa, plot_info);
   tdoa = tdoa_plot_dt_kiwi (input, tdoa, plot_info, 2.5e-3);

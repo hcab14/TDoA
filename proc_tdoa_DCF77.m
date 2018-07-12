@@ -26,8 +26,8 @@ function [tdoa,input]=proc_tdoa_DCF77
     end
   end
 
-  plot_info = struct('lat', [ 45:0.05:55],
-                     'lon', [ -2:0.05:12],
+  plot_info = struct('lat_range', [ 45 55],
+                     'lon_range', [ -2 12],
                      'plotname', sprintf('TDoA_%g', input(1).freq),
                      'title', sprintf('%g kHz %s', input(1).freq, input(1).time),
                      'known_location', struct('coord', [50.0152 9.0112],
@@ -35,6 +35,9 @@ function [tdoa,input]=proc_tdoa_DCF77
                      'dir', 'png',
                      'plot_kiwi', true
                     );
+
+  ## determine map resolution and create plot_info.lat and plot_info.lon fields
+  plot_info = tdoa_autoresolution(plot_info);
 
   tdoa = tdoa_plot_map(input, tdoa, plot_info);
   tdoa = tdoa_plot_dt (input, tdoa, plot_info, 2.5e-3);

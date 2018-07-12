@@ -34,13 +34,10 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
 
   n = length(input_data);
 
-  [most_likely_pos, ...
-   lon_zoom,lat_zoom, ...
-   h_zoom] = get_most_likely_pos(plot_info,
-                                 reshape(sqrt(hSum)/n,
-                                         length(plot_info.lon),
-                                         length(plot_info.lat))');
-  save_as_png_for_map(sprintf('%s/%s_zoom_for_map.png', plot_info.dir, plot_info.plotname), h_zoom, cmap);
+  most_likely_pos = get_most_likely_pos(plot_info,
+                                        reshape(sqrt(hSum)/n,
+                                                length(plot_info.lon),
+                                                length(plot_info.lat))');
 
   if ~isfield(plot_info, 'known_location')
     plot_info.known_location.coord = most_likely_pos;
@@ -156,30 +153,16 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
   end
 endfunction
 
-function [pos,lon_zoom,lat_zoom,h_zoom]=get_most_likely_pos(plot_info, h)
+function pos=get_most_likely_pos(plot_info, h)
   h_max = 20;
   h(h>h_max) = h_max;
   [bb_lon, bb_lat] = find_bounding_box(plot_info, h, h_max);
-
-  lon_zoom = bb_lon(1):0.005:bb_lon(2);
-  lat_zoom = bb_lat(1):0.005:bb_lat(2);
-  [lon_interp, lat_interp] = meshgrid(lon_zoom, lat_zoom);
-  h_zoom = interp2(plot_info.lon, plot_info.lat, h, lon_interp, lat_interp, 'spline');
 
   [_m,  _i] = min(h);
   [_mm, _j] = min(_m);
   _i = _i(_j);
   pos = [plot_info.lat(_i) plot_info.lon(_j)];
   printf('most likely position: lat = %.2f deg  lon = %.2f deg\n', pos);
-
-  [_m,  _i] = min(h_zoom);
-  [_mm, _j] = min(_m);
-  _i = _i(_j);
-
-  pos = [lat_zoom(_i) lon_zoom(_j)];
-  printf('most likely position: lat = %.2f deg  lon = %.2f deg\n', pos);
-
-  save -mat h.mat h plot_info lon_zoom lat_zoom h_zoom
 endfunction
 
 function [bb_lon, bb_lat] = find_bounding_box(plot_info, h, h_max)

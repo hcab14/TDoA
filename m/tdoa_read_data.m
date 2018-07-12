@@ -16,7 +16,7 @@ function [err,input]=tdoa_read_data(input, dir)
     input(i).coord   = get_coord(input(i).vname, dir);
     [x,xx,fs,gpsfix] = proc_kiwi_iq_wav(input(i).fn, 255);
     input(i).gpsfix  = gpsfix;
-    fs
+
     if gpsfix == 255
       printf('no GPS timestamps: %s\n', input(i).fn);
       err = 3;

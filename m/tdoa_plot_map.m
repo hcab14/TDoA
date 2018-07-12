@@ -7,11 +7,14 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
     plot_kiwi = true;
   end
 
-  [tdoa,hSum] = tdoa_generate_maps(input_data, tdoa, plot_info);
-
   cmap = [linspace(1,0,100)' linspace(0,1,100)' zeros(100,1)     ## red to green
             linspace(0,1,100)' ones(100,1)   linspace(0,1,100)']; ## green to white
   colormap(cmap);
+
+  plot_info.h_max    = 20;
+  plot_info.z_to_rgb = @(h) ind2rgb(1+round(h/plot_info.h_max*(size(cmap,1)-1)), cmap);
+
+  [tdoa,hSum] = tdoa_generate_maps(input_data, tdoa, plot_info);
 
   if ~isfield(plot_info, 'coastlines')
     plot_info.coastlines = 'coastline/world_50m.mat';
@@ -49,7 +52,7 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
     allnames = [input_data(i).name '-' allnames];
     for j=1+i:n
       tic;
-      title_extra = ''
+      title_extra = '';
       if plot_kiwi == false
         subplot(n-1,n-1, (n-1)*(i-1)+j-1);
       else
@@ -75,11 +78,14 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
               '-dpng', '-S1024,690');
         print(sprintf('%s/%s-%s map.pdf', plot_info.dir, input_data(i).fname, input_data(j).fname), ...
               '-dpng', '-S1024,690');
-        save_as_png_for_map(sprintf('%s/%s-%s_for_map.png', plot_info.dir, input_data(i).fname, input_data(j).fname),
-                            h, cmap);
+        [bb_lon, bb_lat] = save_as_png_for_map(plot_info,
+                                               sprintf('%s/%s-%s_for_map.png', plot_info.dir, input_data(i).fname, input_data(j).fname),
+                                               h);
 
         [_,h]=contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15], '--', 'linecolor', 0.7*[1 1 1]);
-        save_as_json_for_map(sprintf('%s/%s-%s_contour_for_map.json', plot_info.dir, input_data(i).fname, input_data(j).fname), h);
+        save_as_json_for_map(sprintf('%s/%s-%s_contour_for_map.json', plot_info.dir, input_data(i).fname, input_data(j).fname),
+                             sprintf('%s/%s-%s_for_map.png', plot_info.dir, input_data(i).fname, input_data(j).fname),
+                             h, bb_lon, bb_lat, plot_info, ~false);
       end
     end
   end
@@ -147,17 +153,15 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
   else
     print('-dpng','-S1024,690', sprintf('%s/%s.png', plot_info.dir, plot_info.plotname));
     print('-dpdf','-S1024,690', sprintf('%s/%s.pdf', plot_info.dir, plot_info.plotname));
-    save_as_png_for_map(sprintf('%s/%s_for_map.png', plot_info.dir, plot_info.plotname), h, cmap);
+    [bb_lon, bb_lat] = save_as_png_for_map(plot_info, sprintf('%s/%s_for_map.png', plot_info.dir, plot_info.plotname), h);
     [_,h]=contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15], '--', 'linecolor', 0.7*[1 1 1]);
-    save_as_json_for_map(sprintf('%s/%s_contour_for_map.json', plot_info.dir, plot_info.plotname), h);
+    save_as_json_for_map(sprintf('%s/%s_contour_for_map.json', plot_info.dir, plot_info.plotname),
+                         sprintf('%s/%s_for_map.png', plot_info.dir, plot_info.plotname),
+                         h, bb_lon, bb_lat, plot_info, true);
   end
 endfunction
 
 function pos=get_most_likely_pos(plot_info, h)
-  h_max = 20;
-  h(h>h_max) = h_max;
-  [bb_lon, bb_lat] = find_bounding_box(plot_info, h, h_max);
-
   [_m,  _i] = min(h);
   [_mm, _j] = min(_m);
   _i = _i(_j);
@@ -165,12 +169,12 @@ function pos=get_most_likely_pos(plot_info, h)
   printf('most likely position: lat = %.2f deg  lon = %.2f deg\n', pos);
 endfunction
 
-function [bb_lon, bb_lat] = find_bounding_box(plot_info, h, h_max)
-  h(h>h_max) = h_max;
-  idx_lon = find(min(h)<h_max)([1 end]);
-  idx_lat = find(min(h')<h_max)([1 end]);
-  bb_lon  = plot_info.lon(idx_lon);
-  bb_lat  = plot_info.lat(idx_lat);
+function [bb_lon, bb_lat, idx_lon, idx_lat] = find_bounding_box(plot_info, h)
+  h(h>plot_info.h_max) = plot_info.h_max;
+  idx_lon = find(min(h ) < plot_info.h_max);
+  idx_lat = find(min(h') < plot_info.h_max);
+  bb_lon  = plot_info.lon(idx_lon([1 end]));
+  bb_lat  = plot_info.lat(idx_lat([1 end]));
 endfunction
 
 
@@ -195,38 +199,88 @@ function plot_map(plot_info, h, titlestr, coastlines, do_plot_contour)
 
 end
 
-function save_as_png_for_map(filename, h, cmap)
-  n       = size(cmap,1);
-  h(h>20) = 20;
-  h = flipud(h);
-  h = fliplr(h);
-  rgb     = ind2rgb(1+round(h/20*(n-1)), cmap);
-  alpha   = 1*(h!=20);
+function [bb_lon,bb_lat]=save_as_png_for_map(plot_info, filename, h)
+  h(h>plot_info.h_max) = plot_info.h_max;
+
+  ## find bounding box
+  [bb_lon, bb_lat, idx_lon, idx_lat] = find_bounding_box(plot_info, h);
+
+  ## truncate h to the bounding box
+  h = h(idx_lat, idx_lon);
+
+  ## save as png (ground overlay for google maps)
+  h        = flipud(h);
+  rgb      = plot_info.z_to_rgb(h);
+  alpha    = 1*(h != plot_info.h_max);
+  ## fade out starting with sigma=6
+  b        = h > 0.3*plot_info.h_max & h < plot_info.h_max;
+  alpha(b) = (plot_info.h_max-h(b))/(plot_info.h_max*(1-0.3));
+
+  ## write the png image
   imwrite(rgb, filename, 'Alpha', alpha);
 endfunction
 
-function save_as_json_for_map(filename, h)
+function save_as_json_for_map(filename, pfn, h, bb_lon, bb_lat, plot_info, plot_contour)
   fid = fopen(filename, 'w');
-  fprintf(fid, 'c=[');
+  ## bounding box
+  fprintf(fid, '{"filename": "%s",\n', pfn);
+  fprintf(fid, '"imgBounds": {\n')
+  fprintf(fid, '  "south": %g,\n', bb_lat(1))
+  fprintf(fid, '  "north": %g,\n', bb_lat(2))
+  fprintf(fid, '  "west": %g,\n',  bb_lon(1))
+  fprintf(fid, '  "east": %g},\n', bb_lon(2))
+
+  fprintf(fid, '"plot_contour": %d,\n', plot_contour);
+
+  fprintf(fid, '"polygons": [');
   c = get(h);
+  ## loop over plot handle children
+  ## (1) closed contours -> Polygon
+  polygon_colors = '';
+  is_first       = true;
+  if ~plot_contour
+    c.children = [];
+  end
   for i=1:length(c.children)
     ci = get(c.children(i));
     if ~isnan(ci.vertices(end,end))
+      if ~is_first
+        fprintf(fid, ',');
+      end
+      is_first = false;
       fprintf(fid, '[');
-      fprintf(fid, '{lng:%g, lat:%g},\n', ci.vertices')
-      fprintf(fid, '],\n');
+      fprintf(fid, '{"lng":%g, "lat":%g}\n', ci.vertices(1,:)')
+      fprintf(fid, ',{"lng":%g, "lat":%g}\n', ci.vertices(2:end,:)')
+      fprintf(fid, ']\n');
+      polygon_colors = [polygon_colors sprintf('"#%02x%02x%02x",', round(255*(plot_info.z_to_rgb(ci.cdata))))];
     end
   end
-  fprintf(fid, '];\nl=[');
+  if length(polygon_colors) != 0
+    polygon_colors(end)=[];
+  end
+  fprintf(fid, '],\n"polygon_colors": [%s],\n', polygon_colors);
+  fprintf(fid, '"polylines": [');
+  ## (2) open contours -> Polyline
+  polyline_colors = '';
+  is_first        = true;
   for i=1:length(c.children)
     ci = get(c.children(i));
     if isnan(ci.vertices(end,end))
+      if ~is_first
+        fprintf(fid, ',');
+      end
+      is_first = false;
       fprintf(fid, '[');
-      fprintf(fid, '{lng:%g, lat:%g},\n', ci.vertices(1:end-1,:)')
-      fprintf(fid, '],\n');
+      fprintf(fid, '{"lng":%g, "lat":%g}\n', ci.vertices(1,:)')
+      fprintf(fid, ',{"lng":%g, "lat":%g}\n', ci.vertices(2:end-1,:)')
+      fprintf(fid, ']\n');
+      polyline_colors = [polyline_colors sprintf('"#%02x%02x%02x",', round(255*(plot_info.z_to_rgb(ci.cdata))))];
     end
   end
-  fprintf(fid, '];\n');
+  if length(polyline_colors) != 0
+    polyline_colors(end)=[];
+  end
+  fprintf(fid, '],\n"polyline_colors": [%s]\n}\n', polyline_colors);
   fclose(fid);
 endfunction
 

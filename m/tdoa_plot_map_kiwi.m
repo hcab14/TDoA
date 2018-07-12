@@ -87,7 +87,6 @@ function plot_location(coord, label, is_known_location)
   markers = { 'b*', 'k*' };
   colors  = { 'blue', 'black' };
   plot(coord(2), coord(1), markers{1+is_known_location});
-  # orig fontsize 7.5
   texthandle = text(coord(2), coord(1), label,
                     'fontsize', 16, ...
                     'color', colors{1+is_known_location}, 'horizontalalignment', 'center', 'verticalalignment', 'baseline');

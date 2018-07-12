@@ -8,7 +8,7 @@ function tdoa=tdoa_plot_dt(input, tdoa, plot_info, dt)
 
   if plot_kiwi
     set(0, 'defaultaxesposition', [0.1, 0.1, 0.8, 0.8]);
-    figure(2, 'position', [200,200, 900,600]);
+    figure(2, 'position', [200,200, 1024,690]);
     colormap('default');
     set (0, "defaultaxesfontsize", 12)
     set (0, "defaulttextfontsize", 16)
@@ -44,7 +44,7 @@ function tdoa=tdoa_plot_dt(input, tdoa, plot_info, dt)
       xlabel('dt (msec)');
       if plot_kiwi
         title({sprintf('%s-%s', input(i).name, input(j).name),
-               plot_info.title});
+               plot_info.title}, 'fontsize', 16);
       else
           title(sprintf('%s-%s', input(i).name, input(j).name));
       end
@@ -69,8 +69,8 @@ function tdoa=tdoa_plot_dt(input, tdoa, plot_info, dt)
       hold off;
       printf('tdoa_plot_dt(%d,%d) %.2f sec\n', i,j, toc());
       if plot_kiwi
-        print('-dpng','-S900,600', sprintf('%s/%s-%s dt.png', plot_info.dir, input(i).fname, input(j).fname));
-        print('-dpdf','-S900,600', sprintf('%s/%s-%s dt.pdf', plot_info.dir, input(i).fname, input(j).fname));
+        print('-dpng','-S1024,690', sprintf('%s/%s-%s dt.png', plot_info.dir, input(i).fname, input(j).fname));
+        print('-dpdf','-S1024,690', sprintf('%s/%s-%s dt.pdf', plot_info.dir, input(i).fname, input(j).fname));
       end
     end
   end

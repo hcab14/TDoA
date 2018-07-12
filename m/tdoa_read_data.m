@@ -1,6 +1,10 @@
 ## -*- octave -*-
 
 function [err,input]=tdoa_read_data(input, dir)
+  if nargin == 1
+    dir = 'gnss_pos';
+    printf('using default dir="gnss_pos"\n');
+  end
   err = 0;
   n = length(input);
   for i=1:n

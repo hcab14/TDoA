@@ -1,7 +1,7 @@
 ## -*- octave -*-
 
 function tdoa=tdoa_plot_dt_kiwi(input, tdoa, plot_info, dt)
-  figure(2, 'position', [200,200, 900,600]);
+  figure(2, 'position', [200,200, 1024,690]);
   colormap('default');
   set (0, "defaultaxesfontsize", 12)
   set (0, "defaulttextfontsize", 16)
@@ -12,6 +12,7 @@ function tdoa=tdoa_plot_dt_kiwi(input, tdoa, plot_info, dt)
   for i=1:n
     for j=i+1:n
       tic;
+      clf;
       ny   = length(tdoa(i,j).t);
       tmm  = [min(tdoa(i,j).t{1}) max(tdoa(i,j).t{1})];
       nx   = round(diff(tmm)/bin_width);
@@ -25,7 +26,7 @@ function tdoa=tdoa_plot_dt_kiwi(input, tdoa, plot_info, dt)
       imagesc(1e3*bins, tdoa(i,j).gpssec, a);
       ylabel('GPS seconds');
       xlabel('dt (msec)');
-      title(sprintf('%s-%s', input(i).name, input(j).name));
+      title(sprintf('%s-%s', input(i).name, input(j).name), 'fontsize', 16);
       [m,k] = max(mean(a));
       t0    = 1e3*bins(k);
       xlim(t0+1e3*dt*[-1 1]);
@@ -48,8 +49,8 @@ function tdoa=tdoa_plot_dt_kiwi(input, tdoa, plot_info, dt)
       ha = axes('Position',[0 0 1 1],'Xlim',[0 1],'Ylim',[0  1],'Box','off','Visible','off','Units','normalized', 'clipping' , 'off');
       #text(0.5, 0.98,  plot_info.title, 'fontweight', 'bold', 'horizontalalignment', 'center', 'fontsize', 15);
     
-      print('-dpng','-S900,600', sprintf('%s/%s-%s dt.png', plot_info.dir, input(i).fname, input(j).fname));
-      print('-dpdf','-S900,600', sprintf('%s/%s-%s dt.pdf', plot_info.dir, input(i).fname, input(j).fname));
+      print('-dpng','-S1024,690', sprintf('%s/%s-%s dt.png', plot_info.dir, input(i).fname, input(j).fname));
+      print('-dpdf','-S1024,690', sprintf('%s/%s-%s dt.pdf', plot_info.dir, input(i).fname, input(j).fname));
     end
   end
 endfunction

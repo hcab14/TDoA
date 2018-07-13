@@ -22,7 +22,7 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
   coastlines = load(plot_info.coastlines).c;
 
   if plot_kiwi
-    set(0,'defaultaxesposition', [0.05, 0.05, 0.95, 0.87]);
+    set(0,'defaultaxesposition', [0.08, 0.08, 0.90, 0.85]);
     figure(1, 'position', [100,100, 1024,690]);
     set(0, "defaultaxesfontsize", 12)
     set(0, "defaulttextfontsize", 16)

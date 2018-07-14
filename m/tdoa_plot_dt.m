@@ -69,8 +69,12 @@ function tdoa=tdoa_plot_dt(input, tdoa, plot_info, dt)
       hold off;
       printf('tdoa_plot_dt(%d,%d) %.2f sec\n', i,j, toc());
       if plot_kiwi
-        print('-dpng','-S1024,690', sprintf('%s/%s-%s dt.png', plot_info.dir, input(i).fname, input(j).fname));
-        print('-dpdf','-S1024,690', sprintf('%s/%s-%s dt.pdf', plot_info.dir, input(i).fname, input(j).fname));
+        try
+          print('-dpng','-S1024,690', sprintf('%s/%s-%s dt.png', plot_info.dir, input(i).fname, input(j).fname));
+          print('-dpdf','-S1024,690', sprintf('%s/%s-%s dt.pdf', plot_info.dir, input(i).fname, input(j).fname));
+        catch
+          tdoa_err_kiwi(7);
+        end_try_catch
       end
     end
   end

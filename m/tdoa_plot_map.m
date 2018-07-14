@@ -74,18 +74,28 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
         plot_location(plot_info, input_data(i).coord, input_data(i).name, false);
         plot_location(plot_info, input_data(j).coord, input_data(j).name, false);
         set(colorbar(), 'XLabel', '\sigma')
-        print(sprintf('%s/%s-%s map.png', plot_info.dir, input_data(i).fname, input_data(j).fname), ...
-              '-dpng', '-S1024,690');
-        print(sprintf('%s/%s-%s map.pdf', plot_info.dir, input_data(i).fname, input_data(j).fname), ...
-              '-dpng', '-S1024,690');
-        [bb_lon, bb_lat] = save_as_png_for_map(plot_info,
-                                               sprintf('%s/%s-%s_for_map.png', plot_info.dir, input_data(i).fname, input_data(j).fname),
-                                               h);
-
-        [_,h]=contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15], '--', 'linecolor', 0.7*[1 1 1]);
-        save_as_json_for_map(sprintf('%s/%s-%s_contour_for_map.json', plot_info.dir, input_data(i).fname, input_data(j).fname),
-                             sprintf('%s/%s-%s_for_map.png', plot_info.dir, input_data(i).fname, input_data(j).fname),
-                             h, bb_lon, bb_lat, plot_info, ~false);
+        try
+          print(sprintf('%s/%s-%s map.png', plot_info.dir, input_data(i).fname, input_data(j).fname), ...
+                '-dpng', '-S1024,690');
+          print(sprintf('%s/%s-%s map.pdf', plot_info.dir, input_data(i).fname, input_data(j).fname), ...
+                '-dpng', '-S1024,690');
+        catch
+          tdoa_err_kiwi(5);
+        end_try_catch
+        if isfield(plot_info, 'plot_kiwi_json')
+          try
+            [bb_lon, bb_lat] = save_as_png_for_map(plot_info,
+                                                   sprintf('%s/%s-%s_for_map.png', plot_info.dir, input_data(i).fname, input_data(j).fname),
+                                                   h);
+    
+            [_,h]=contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15], '--', 'linecolor', 0.7*[1 1 1]);
+            save_as_json_for_map(sprintf('%s/%s-%s_contour_for_map.json', plot_info.dir, input_data(i).fname, input_data(j).fname),
+                                 sprintf('%s/%s-%s_for_map.png', plot_info.dir, input_data(i).fname, input_data(j).fname),
+                                 h, bb_lon, bb_lat, plot_info, ~false);
+          catch
+            tdoa_err_kiwi(8);
+          end_try_catch
+        end
       end
     end
   end
@@ -151,13 +161,23 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
     print('-dpng','-S900,600', fullfile('png', sprintf('%s.png', plot_info.plotname)));
     print('-dpdf','-S900,600', fullfile('pdf', sprintf('%s.pdf', plot_info.plotname)));
   else
-    print('-dpng','-S1024,690', sprintf('%s/%s.png', plot_info.dir, plot_info.plotname));
-    print('-dpdf','-S1024,690', sprintf('%s/%s.pdf', plot_info.dir, plot_info.plotname));
-    [bb_lon, bb_lat] = save_as_png_for_map(plot_info, sprintf('%s/%s_for_map.png', plot_info.dir, plot_info.plotname), h);
-    [_,h]=contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15], '--', 'linecolor', 0.7*[1 1 1]);
-    save_as_json_for_map(sprintf('%s/%s_contour_for_map.json', plot_info.dir, plot_info.plotname),
-                         sprintf('%s/%s_for_map.png', plot_info.dir, plot_info.plotname),
-                         h, bb_lon, bb_lat, plot_info, true);
+    try
+      print('-dpng','-S1024,690', sprintf('%s/%s.png', plot_info.dir, plot_info.plotname));
+      print('-dpdf','-S1024,690', sprintf('%s/%s.pdf', plot_info.dir, plot_info.plotname));
+    catch
+      tdoa_err_kiwi(6);
+    end_try_catch
+    if isfield(plot_info, 'plot_kiwi_json')
+      try
+        [bb_lon, bb_lat] = save_as_png_for_map(plot_info, sprintf('%s/%s_for_map.png', plot_info.dir, plot_info.plotname), h);
+        [_,h]=contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15], '--', 'linecolor', 0.7*[1 1 1]);
+        save_as_json_for_map(sprintf('%s/%s_contour_for_map.json', plot_info.dir, plot_info.plotname),
+                             sprintf('%s/%s_for_map.png', plot_info.dir, plot_info.plotname),
+                             h, bb_lon, bb_lat, plot_info, true);
+      catch
+        tdoa_err_kiwi(8);
+      end_try_catch
+    end
   end
 endfunction
 

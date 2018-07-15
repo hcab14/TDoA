@@ -191,8 +191,16 @@ endfunction
 
 function [bb_lon, bb_lat, idx_lon, idx_lat] = find_bounding_box(plot_info, h)
   h(h>plot_info.h_max) = plot_info.h_max;
-  idx_lon = find(min(h ) < plot_info.h_max);
-  idx_lat = find(min(h') < plot_info.h_max);
+  if min(min(h)) == max(max(h))
+    idx_lon = 1:length(plot_info.lon);
+    idx_lat = 1:length(plot_info.lat);
+  else
+    idx_lon = find(min(h ) < plot_info.h_max);
+    idx_lat = find(min(h') < plot_info.h_max);
+    ## idx_lon,lat may not be contiguous
+    idx_lon = idx_lon(1):1:idx_lon(end);
+    idx_lat = idx_lat(1):1:idx_lat(end);
+  end
   bb_lon  = plot_info.lon(idx_lon([1 end]));
   bb_lat  = plot_info.lat(idx_lat([1 end]));
 endfunction

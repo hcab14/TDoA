@@ -37,7 +37,7 @@ function b = tdoa_remove_outliers(b, lags)
 
       m(i,1) = mean(lags(cut(i,1,:)));
       m(i,2) = mean(lags(cut(i,2,:)));
-      m0(i) = mean(m(i,:))
+      m0(i) = mean(m(i,:));
       if m0(i) == m0(i-1)
         break;
       end

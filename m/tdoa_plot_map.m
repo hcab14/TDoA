@@ -79,8 +79,8 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
                 '-dpng', '-S1024,690');
           print(sprintf('%s/%s-%s map.pdf', plot_info.dir, input_data(i).fname, input_data(j).fname), ...
                 '-dpng', '-S1024,690');
-        catch
-          tdoa_err_kiwi(5);
+        catch err
+          err_kiwi(5, err);
         end_try_catch
         if isfield(plot_info, 'plot_kiwi_json')
           try
@@ -92,8 +92,8 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
             save_as_json_for_map(sprintf('%s/%s-%s_contour_for_map.json', plot_info.dir, input_data(i).fname, input_data(j).fname),
                                  sprintf('%s/%s-%s_for_map.png', plot_info.dir, input_data(i).fname, input_data(j).fname),
                                  h, bb_lon, bb_lat, plot_info, ~false);
-          catch
-            tdoa_err_kiwi(8);
+          catch err
+            err_kiwi(8, err);
           end_try_catch
         end
       end
@@ -164,8 +164,8 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
     try
       print('-dpng','-S1024,690', sprintf('%s/%s.png', plot_info.dir, plot_info.plotname));
       print('-dpdf','-S1024,690', sprintf('%s/%s.pdf', plot_info.dir, plot_info.plotname));
-    catch
-      tdoa_err_kiwi(6);
+    catch err
+      err_kiwi(6, err);
     end_try_catch
     if isfield(plot_info, 'plot_kiwi_json')
       try
@@ -174,8 +174,8 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
         save_as_json_for_map(sprintf('%s/%s_contour_for_map.json', plot_info.dir, plot_info.plotname),
                              sprintf('%s/%s_for_map.png', plot_info.dir, plot_info.plotname),
                              h, bb_lon, bb_lat, plot_info, true);
-      catch
-        tdoa_err_kiwi(8);
+      catch err
+        err_kiwi(9, err);
       end_try_catch
     end
   end
@@ -199,7 +199,11 @@ endfunction
 
 
 function plot_map(plot_info, h, titlestr, coastlines, do_plot_contour)
-  imagesc(plot_info.lon([1 end]), plot_info.lat([1 end]), h, [0 20]);
+  try
+    imagesc(plot_info.lon([1 end]), plot_info.lat([1 end]), h, [0 20]);
+  catch err
+    err_kiwi(10, err);
+  end_try_catch
   set(gca,'YDir','normal');
   xlabel('longitude (deg)');
   ylabel('latitude (deg)');
@@ -334,3 +338,10 @@ function [lat,lon]=plot_circle(s)
   lat *= 180/pi;
   lon *= 180/pi;
 endfunction
+
+function err_kiwi(code, err)
+  printf(["\n" err.identifier "\n"]);
+  printf([err.message "\n"]);
+  dbstack()
+  tdoa_err_kiwi(code);
+end

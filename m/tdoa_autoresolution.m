@@ -8,7 +8,7 @@ function plot_info=tdoa_autoresolution(plot_info)
   dlat = diff(plot_info.lat_range);
   dlon = diff(plot_info.lon_range);
 
-  ## number of pixels in lat and lon for all bin widthds
+  ## number of pixels in lat and lon for all bin widths
   nlat = dlat ./ bin_widths;
   nlon = dlon ./ bin_widths;
 

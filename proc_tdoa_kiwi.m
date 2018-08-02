@@ -29,7 +29,8 @@ function [tdoa,input]=proc_tdoa_kiwi(dir, files, plot_info)
   plot_info.title     = sprintf('%g kHz %s', input(1).freq, input(1).time);
   plot_info.plot_kiwi = true;
 
-  if isfield(plot_info, 'plot_kiwi_json')
+  if isfield(plot_info, 'lat_range')
+    plot_info.plot_kiwi_json = true;
     ### determine map resolution and create plot_info.lat and plot_info.lon fields
     plot_info = tdoa_autoresolution(plot_info);
     tdoa = tdoa_plot_map(input, tdoa, plot_info);

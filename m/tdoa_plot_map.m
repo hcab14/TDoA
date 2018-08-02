@@ -6,6 +6,11 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
   if isfield(plot_info, 'plot_kiwi') && plot_info.plot_kiwi == true
     plot_kiwi = true;
   end
+  
+  plot_kiwi_json = false;
+  if isfield(plot_info, 'plot_kiwi_json') && plot_info.plot_kiwi_json == true
+    plot_kiwi_json = true;
+  end
 
   cmap = [linspace(1,0,100)' linspace(0,1,100)' zeros(100,1)     ## red to green
             linspace(0,1,100)' ones(100,1)   linspace(0,1,100)']; ## green to white
@@ -42,6 +47,9 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
                                                 length(plot_info.lon),
                                                 length(plot_info.lat))');
 
+  if plot_kiwi
+    printf('likely=%.2f,%.2f\n', most_likely_pos);
+  end
   if ~isfield(plot_info, 'known_location')
     plot_info.known_location.coord = most_likely_pos;
     plot_info.known_location.name  = sprintf('%.2fN %.2fE', most_likely_pos);
@@ -82,7 +90,7 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
         catch err
           err_kiwi(5, err);
         end_try_catch
-        if isfield(plot_info, 'plot_kiwi_json')
+        if plot_info.plot_kiwi_json
           try
             [bb_lon, bb_lat] = save_as_png_for_map(plot_info,
                                                    sprintf('%s/%s-%s_for_map.png', plot_info.dir, input_data(i).fname, input_data(j).fname),
@@ -167,7 +175,7 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
     catch err
       err_kiwi(6, err);
     end_try_catch
-    if isfield(plot_info, 'plot_kiwi_json')
+    if plot_info.plot_kiwi_json
       try
         [bb_lon, bb_lat] = save_as_png_for_map(plot_info, sprintf('%s/%s_for_map.png', plot_info.dir, plot_info.plotname), h);
         [_,h]=contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15], '--', 'linecolor', 0.7*[1 1 1]);

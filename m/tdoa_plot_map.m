@@ -6,10 +6,12 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
   if isfield(plot_info, 'plot_kiwi') && plot_info.plot_kiwi == true
     plot_kiwi = true;
   end
-  
+
   plot_kiwi_json = false;
-  if isfield(plot_info, 'plot_kiwi_json') && plot_info.plot_kiwi_json == true
-    plot_kiwi_json = true;
+  if ~isfield(plot_info, 'plot_kiwi_json')
+    plot_info.plot_kiwi_json = false;
+  else
+    plot_kiwi_json = plot_info.plot_kiwi_json;
   end
 
   cmap = [linspace(1,0,100)' linspace(0,1,100)' zeros(100,1)     ## red to green
@@ -95,7 +97,7 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
             [bb_lon, bb_lat] = save_as_png_for_map(plot_info,
                                                    sprintf('%s/%s-%s_for_map.png', plot_info.dir, input_data(i).fname, input_data(j).fname),
                                                    h);
-    
+
             [_,h]=contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15], '--', 'linecolor', 0.7*[1 1 1]);
             save_as_json_for_map(sprintf('%s/%s-%s_contour_for_map.json', plot_info.dir, input_data(i).fname, input_data(j).fname),
                                  sprintf('%s/%s-%s_for_map.png', plot_info.dir, input_data(i).fname, input_data(j).fname),

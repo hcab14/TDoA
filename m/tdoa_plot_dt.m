@@ -67,7 +67,7 @@ function tdoa=tdoa_plot_dt(input, tdoa, plot_info, dt)
       plot(1e3*tdoa(i,j).lags(b), tdoa(i,j).gpssec(b), '*r');
       plot(1e3*tdoa(i,j).lags(b), tdoa(i,j).gpssec(b), '*r');
       hold off;
-      printf('tdoa_plot_dt(%d,%d) %.2f sec\n', i,j, toc());
+      printf('tdoa_plot_dt(%d,%d): [%.3f sec]\n', i,j, toc());
       if plot_kiwi
         try
           print('-dpng','-S1024,690', sprintf('%s/%s-%s dt.png', plot_info.dir, input(i).fname, input(j).fname));

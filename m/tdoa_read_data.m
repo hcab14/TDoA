@@ -6,8 +6,9 @@ function [err,input]=tdoa_read_data(input, dir)
     printf('using default dir="gnss_pos"\n');
   end
   err = 0;
-  n = length(input);
+  n = numel(input);
   for i=1:n
+    tic;
     [input(i).name, ...
      input(i).vname, ...
      input(i).fname, ...
@@ -23,21 +24,23 @@ function [err,input]=tdoa_read_data(input, dir)
       return
     end
 
-   if gpsfix == 254
-     printf('no recent GPS timestamps: %s\n', input(i).fn);
+    if gpsfix == 254
+      printf('no recent GPS timestamps: %s\n', input(i).fn);
      err = 4;
      return
-   end
+    end
 
+    input(i).use     = true;
     input(i).t       = cat(1,xx.t)(1000:end);
     tmin(i)          = min(input(i).t);
     tmax(i)          = max(input(i).t);
     input(i).z       = cat(1,xx.z)(1000:end);
     input(i).gpssec  = cat(1,x.gpssec)+1e-9*cat(1,x.gpsnsec);
     input(i).fs      = 512/mean(diff(input(i).gpssec)(2:end));
-    printf('%-40s %s %3d\n', input(i).fn, input(i).name, gpsfix);
-
+    printf('tdoa_read_data: %-40s %s last_gnss_fix=%3d [%.3f sec]\n', input(i).fn, input(i).name, gpsfix, toc);
   end
+
+  ## truncate all data to the same common time interval
   t0 = max(tmin);
   t1 = min(tmax);
   for i=1:n
@@ -54,7 +57,7 @@ function [name,vname,fname,time,freq]=parse_iq_filename(fn)
     error(sprintf('wrong extension: %s'), fn);
   end
   tokens = strsplit(filename, '_');
-  if length(tokens) < 4
+  if numel(tokens) < 4
     error(sprintf('malformed filename: %s'), fn);
   end
   if ~strcmp(tokens{4}, 'iq')

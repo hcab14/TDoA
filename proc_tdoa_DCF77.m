@@ -20,11 +20,9 @@ function [tdoa,input]=proc_tdoa_DCF77
                                           'dk',    [-2:2],            # use 5 points for peak fitting
                                           'fn', @tdoa_peak_fn_pol2fit # fit a pol2 to the peak
                                          ));
-  for i=1:n
-    for j=i+1:n
-      tdoa(i,j).lags_filter = tdoa_remove_outliers(ones(size(tdoa(i,j).gpssec))==1, tdoa(i,j).lags);
-    end
-  end
+  tdoa  = tdoa_cluster_lags(tdoa, input);
+
+  [idx,xdi,eqs,c,nsigma,tdoa,input]=tdoa_verify_lags(n, tdoa, input);
 
   plot_info = struct('lat_range', [ 45 55],
                      'lon_range', [ -2 12],
@@ -33,7 +31,7 @@ function [tdoa,input]=proc_tdoa_DCF77
                      'known_location', struct('coord', [50.0152 9.0112],
                                               'name',  'DCF77'),
                      'dir', 'png',
-                     'plot_kiwi', true
+                     'plot_kiwi', ~true
                     );
 
   ## determine map resolution and create plot_info.lat and plot_info.lon fields

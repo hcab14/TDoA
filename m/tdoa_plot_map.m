@@ -15,7 +15,7 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
   end
 
   cmap = [linspace(1,0,100)' linspace(0,1,100)' zeros(100,1)     ## red to green
-            linspace(0,1,100)' ones(100,1)   linspace(0,1,100)']; ## green to white
+          linspace(0,1,100)' ones(100,1)   linspace(0,1,100)'];  ## green to white
   colormap(cmap);
 
   plot_info.h_max    = 20;
@@ -42,10 +42,11 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
     plot_info.labelfontsize =  7.5;
   end
 
-  n = length(input_data);
+  n_stn      = length(input_data);
+  n_stn_used = sum(vertcat(input_data.use));
 
   most_likely_pos = get_most_likely_pos(plot_info,
-                                        reshape(sqrt(hSum)/n,
+                                        reshape(sqrt(hSum)/n_stn_used,
                                                 length(plot_info.lon),
                                                 length(plot_info.lat))');
 
@@ -58,13 +59,15 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
   end
 
   allnames = '';
-  for i=1:n
-    allnames = [input_data(i).name '-' allnames];
-    for j=1+i:n
+  for i=1:n_stn
+    if input_data(i).use
+      allnames = [input_data(i).name '-' allnames];
+    end
+    for j=1+i:n_stn
       tic;
       title_extra = '';
       if plot_kiwi == false
-        subplot(n-1,n-1, (n-1)*(i-1)+j-1);
+        subplot(n_stn-1,n_stn-1, (n_stn-1)*(i-1)+j-1);
       else
         title_extra = plot_info.title;
         clf;
@@ -79,7 +82,7 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
                titlestr,
                coastlines,
                ~false);
-      printf('tdoa_plot_map(%d,%d) %.2f sec\n', i,j, toc());
+      printf('tdoa_plot_map(%d,%d): [%.3f sec]\n', i,j, toc());
       if plot_kiwi
         plot_location(plot_info, input_data(i).coord, input_data(i).name, false);
         plot_location(plot_info, input_data(j).coord, input_data(j).name, false);
@@ -110,16 +113,16 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
     end
   end
   if plot_kiwi == false
-    for i=1:n
-      for j=1+i:n
-        subplot(n-1,n-1, (n-1)*(i-1)+j-1);
+    for i=1:n_stn
+      for j=1+i:n_stn
+        subplot(n_stn-1,n_stn-1, (n_stn-1)*(i-1)+j-1);
         plot_location(plot_info, input_data(i).coord, input_data(i).name, false);
         plot_location(plot_info, input_data(j).coord, input_data(j).name, false);
         set(colorbar(), 'XLabel', '\sigma')
       end
     end
 
-    switch n
+    switch n_stn
       case {3}
         subplot(2,2,3);
       case {4}
@@ -129,7 +132,7 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
       case {6}
         subplot(3,3,7);
       otherwise
-        error(sprintf('n=%d is not supported'));
+        error(sprintf('n_stn=%d is not supported', n_stn));
     end
   else
     clf;
@@ -141,7 +144,7 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
     titlestr = [titlestr ' ' plot_info.title];
   end
 
-  h = reshape(sqrt(hSum)/n, length(plot_info.lon), length(plot_info.lat))';
+  h = reshape(sqrt(hSum)/n_stn_used, length(plot_info.lon), length(plot_info.lat))';
 
   plot_map(plot_info,
            h,
@@ -149,12 +152,12 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
            coastlines,
            true);
 
-  for i=1:n
+  for i=1:n_stn
     plot_location(plot_info, input_data(i).coord, input_data(i).name, false);
   end
 
   set(colorbar(),'XLabel', '\chi^2/ndf')
-  printf('tdoa_plot_map_combined %.2f sec\n', toc());
+  printf('tdoa_plot_map_combined: [%.3f sec]\n', toc());
 
   if plot_kiwi == false
     ha = axes('Position', [0 0 1 1], ...

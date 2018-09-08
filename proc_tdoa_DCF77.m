@@ -22,7 +22,7 @@ function [tdoa,input]=proc_tdoa_DCF77
                                          ));
   tdoa  = tdoa_cluster_lags(tdoa, input);
 
-  [idx,xdi,eqs,c,nsigma,tdoa,input]=tdoa_verify_lags(n, tdoa, input);
+  [tdoa,input]=tdoa_verify_lags(n, tdoa, input);
 
   plot_info = struct('lat_range', [ 45 55],
                      'lon_range', [ -2 12],

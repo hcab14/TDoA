@@ -34,6 +34,8 @@ function [b,mean_lags,std_lags,fraction,mean_prob]=tdoa_remove_outliers(b, lags,
   end
   mean_lags = mean_lags(end);
   std_lags  = std_lags(end);
-  mean_prob = frange(lags(b))/interval_before;
-  fraction  = sum(b)/datapoints_before;
+  if range > 0
+    mean_prob = frange(lags(b))/interval_before;
+    fraction  = sum(b)/datapoints_before;
+  end
 endfunction

@@ -2,15 +2,18 @@
 
 function tdoa=tdoa_cluster_lags(tdoa, input)
   n = length(input);
+  n_comb = 1;
   for i=1:n
     for j=i+1:n
       tic;
-      [_,tdoa(i,j).lags_filter] = tdoa_cluster_lags_(ones(size(tdoa(i,j).gpssec))==1, ...
-                                                    tdoa(i,j).lags, tdoa(i,j).range);
+      [tdoa(i,j).cl,tdoa(i,j).lags_filter] = tdoa_cluster_lags_(ones(size(tdoa(i,j).gpssec))==1, ...
+                                                                tdoa(i,j).lags, tdoa(i,j).range);
       printf('tdoa_cluster_lags(%d,%d): num_clusters=%d [%.3f sec]\n', ...
              i,j, size(tdoa(i,j).lags_filter, 1), toc());
+      n_comb *= size(tdoa(i,j).lags_filter,1);
     end
   end
+  printf('tdoa_cluster_lags: n_comb=%d\n', n_comb);
 endfunction
 
 function [cl,b,nsigma]=tdoa_cluster_lags_(b, lags, range)
@@ -18,7 +21,7 @@ function [cl,b,nsigma]=tdoa_cluster_lags_(b, lags, range)
     [cl,cl_b,nsigma]=tdoa_cluster_lags_single(b, lags, ncls, range);
     ##nsigma
     ##[vertcat(cl.mean) vertcat(cl.std)  vertcat(cl.fraction)./vertcat(cl.mean_prob)]
-    if all(nsigma > 2.5) && all(vertcat(cl.fraction)./vertcat(cl.mean_prob) > 2)
+    if all(nsigma > 2.5) && all(vertcat(cl.fraction)./vertcat(cl.mean_prob) > 2) && all(vertcat(cl.std) < 1e-3)
       b = cl_b;
       return
     end
@@ -27,7 +30,7 @@ function [cl,b,nsigma]=tdoa_cluster_lags_(b, lags, range)
   nsigma = NaN;
   [b,cl.mean,cl.std,cl.fraction,cl.mean_prob] = tdoa_remove_outliers(b, lags, 3, 1e-3, 2*range);
   ##[vertcat(cl.mean) vertcat(cl.std)  vertcat(cl.fraction)./vertcat(cl.mean_prob)]
-  if cl.fraction/cl.mean_prob < 2
+  if cl.mean_prob == 0 || cl.fraction/cl.mean_prob < 2
     b(1:end) = false;
     cl.std   = Inf;
   end

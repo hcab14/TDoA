@@ -13,16 +13,14 @@ function [tdoa,input]=proc_tdoa_kiwi(dir, files, plot_info)
   end
 
   tdoa  = tdoa_compute_lags(input, struct('dt',     12000,            # 1-second cross-correlation intervals
-                                          'range',  0.015,            # peak search range is +-15 ms
+                                          'range',  0.020,            # peak search range is +-20 ms
                                           'dk',    [-2:2],            # use 5 points for peak fitting
                                           'fn', @tdoa_peak_fn_pol2fit # fit a pol2 to the peak
                                          ));
-  n = length(input);
-  for i=1:n
-    for j=i+1:n
-      tdoa(i,j).lags_filter = tdoa_remove_outliers(ones(size(tdoa(i,j).gpssec))==1, tdoa(i,j).lags);
-    end
-  end
+
+  tdoa         = tdoa_cluster_lags(tdoa, input);
+  [tdoa,input] = tdoa_verify_lags(n, tdoa, input);
+  ##save('-mat', 'tdoa.mat', 'input', 'tdoa');
 
   plot_info.dir       = dir;
   plot_info.plotname  = 'TDoA map';

@@ -39,11 +39,11 @@ function [err,input]=tdoa_read_data(input, dir)
       continue
     end
     if max(input(i).z) == 0
-      printf('tdoa_read_data: %-40s max(z)==0 %s\n', input(i).fn);
+      printf('tdoa_read_data: %-40s max(z)==0\n', input(i).fn);
       continue;
     end
     if max(abs(diff(input(i).t))) > 2/fs
-      printf('tdoa_read_data: max(abs(diff(input(i).t))) = %f > %f %s\n', ...
+      printf('tdoa_read_data: %-40s max(abs(diff(input(i).t))) = %f > %f\n', ...
              input(i).fn, max(abs(diff(input(i).t))), 2/fs);
       continue
     end

@@ -1,7 +1,8 @@
 ## -*- octave -*-
 
-function [tdoa,input,idx,xdi,eqs,c,nsigma]=tdoa_verify_lags(n, tdoa, input)
+function [tdoa,input,idx,xdi,eqs,c,nsigma]=tdoa_verify_lags(tdoa, input)
   tic;
+  n = numel(input);
   if n < 3
     ## select the cluster with the most entries
     [_,idx_min] = min(vertcat(tdoa(1,2).cl.std))

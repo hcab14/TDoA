@@ -1,7 +1,7 @@
 ## -*- octave -*-
 
 function tdoa=tdoa_cluster_lags(tdoa, input)
-  n = length(input);
+  n      = length(input);
   n_comb = 1;
   for i=1:n
     for j=i+1:n
@@ -37,7 +37,6 @@ function [cl,b,nsigma]=tdoa_cluster_lags_(b, lags, range)
 endfunction
 
 function [cl,b,nsigma]=tdoa_cluster_lags_single(b, lags, ncls, range)
-
   cl_boundaries  (1,1:ncls+1) = [-range linspace(min(lags(b)), max(lags(b)), ncls+1)(2:ncls) range];
   cl_boundaries_use(1:ncls+1) = true;
 

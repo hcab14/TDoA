@@ -32,6 +32,11 @@ function [err,input]=tdoa_read_data(input, dir)
 
     input(i).use     = true;
     input(i).t       = cat(1,xx.t)(1000:end);
+    if numel(input(i).t) == 0
+      printf('number of samples %s < 1000\n', input(i).fn);
+      err = 5;
+      return;
+    end
     tmin(i)          = min(input(i).t);
     tmax(i)          = max(input(i).t);
     input(i).z       = cat(1,xx.z)(1000:end);
@@ -39,7 +44,7 @@ function [err,input]=tdoa_read_data(input, dir)
     input(i).fs      = 512/mean(diff(input(i).gpssec)(2:end));
     if max(input(i).z) == 0
       printf('max(z)==0 %s\n', input(i).fn);
-      err = 5;
+      err = 6;
       return;
     end
     printf('tdoa_read_data: %-40s %s last_gnss_fix=%3d [%.3f sec]\n', input(i).fn, input(i).name, gpsfix, toc);

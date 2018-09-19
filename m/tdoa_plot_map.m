@@ -77,11 +77,11 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
                    sprintf('dt=%.0fus RMS(dt)=%.0fus', mean(tdoa(i,j).lags(b))*1e6, std(tdoa(i,j).lags(b))*1e6)
                  };
       h = reshape(sqrt(tdoa(i,j).h), length(plot_info.lon), length(plot_info.lat))';
-      plot_map(plot_info,
-               h,
-               titlestr,
-               coastlines,
-               ~false);
+      plot_info = plot_map(plot_info,
+                           h,
+                           titlestr,
+                           coastlines,
+                           ~false);
       printf('tdoa_plot_map(%d,%d): [%.3f sec]\n', i,j, toc());
       if plot_kiwi
         plot_location(plot_info, input_data(i).coord, input_data(i).name, false);
@@ -146,11 +146,11 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
 
   h = reshape(sqrt(hSum)/n_stn_used, length(plot_info.lon), length(plot_info.lat))';
 
-  plot_map(plot_info,
-           h,
-           titlestr,
-           coastlines,
-           true);
+  plot_info = plot_map(plot_info,
+                       h,
+                       titlestr,
+                       coastlines,
+                       true);
 
   for i=1:n_stn
     plot_location(plot_info, input_data(i).coord, input_data(i).name, false);
@@ -219,7 +219,7 @@ function [bb_lon, bb_lat, idx_lon, idx_lat] = find_bounding_box(plot_info, h)
 endfunction
 
 
-function plot_map(plot_info, h, titlestr, coastlines, do_plot_contour)
+function plot_info=plot_map(plot_info, h, titlestr, coastlines, do_plot_contour)
   try
     imagesc(plot_info.lon([1 end]), plot_info.lat([1 end]), h, [0 20]);
   catch err
@@ -233,9 +233,9 @@ function plot_map(plot_info, h, titlestr, coastlines, do_plot_contour)
   if do_plot_contour
     [_,h]=contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15], '--', 'linecolor', 0.7*[1 1 1]);
   end
-  plot_coastlines(coastlines,
-                  [plot_info.lon(1)   plot_info.lat(1)],
-                  [plot_info.lon(end) plot_info.lat(end)]);
+  plot_info = plot_coastlines(plot_info, coastlines,
+                              [plot_info.lon(1)   plot_info.lat(1)],
+                              [plot_info.lon(end) plot_info.lat(end)]);
   if isfield(plot_info, 'known_location')
     for k=1:length(plot_info.known_location)
       plot_location(plot_info, plot_info.known_location(k).coord, plot_info.known_location(k).name, true);

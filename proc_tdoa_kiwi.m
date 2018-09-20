@@ -6,7 +6,10 @@ function [tdoa,input]=proc_tdoa_kiwi(dir, files, plot_info)
     input(i).fn = files{i};
   end
 
-  [err, input] = tdoa_read_data(input, dir, dir);
+  plot_info.dir       = dir;
+  plot_info.save_json = @save_json;
+
+  [err, input] = tdoa_read_data(plot_info, input, dir);
   if err != 0
     tdoa_err_kiwi(err);
   end
@@ -16,11 +19,10 @@ function [tdoa,input]=proc_tdoa_kiwi(dir, files, plot_info)
                                           'dk',    [-2:2],            # use 5 points for peak fitting
                                           'fn', @tdoa_peak_fn_pol2fit # fit a pol2 to the peak
                                          ));
-  tdoa         = tdoa_cluster_lags(tdoa, input);
-  [tdoa,input] = tdoa_verify_lags (tdoa, input);
+  tdoa         = tdoa_cluster_lags(plot_info, tdoa, input);
+  [tdoa,input] = tdoa_verify_lags (plot_info, tdoa, input);
   ##save('-mat', 'tdoa.mat', 'input', 'tdoa');
 
-  plot_info.dir       = dir;
   plot_info.plotname  = 'TDoA map';
   plot_info.title     = sprintf('%g kHz %s', input(1).freq, input(1).time);
   plot_info.plot_kiwi = true;
@@ -40,4 +42,12 @@ function [tdoa,input]=proc_tdoa_kiwi(dir, files, plot_info)
   end
 
   tdoa_err_kiwi(0);
+endfunction
+
+function save_json(plot_info, fn, mode, str)
+  fid = fopen(fullfile(plot_info.dir, fn), mode);
+  str = strrep(str,  ':Inf',  ':"Infinity"');
+  str = strrep(str, ':-Inf', ':"-Infinity"');
+  fprintf(fid, str);
+  fclose(fid);
 endfunction

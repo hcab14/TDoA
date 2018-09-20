@@ -9,6 +9,7 @@ function tdoa=tdoa_plot_dt(input, tdoa, plot_info, dt)
   if plot_kiwi
     set(0, 'defaultaxesposition', [0.1, 0.1, 0.8, 0.8]);
     figure(2, 'position', [200,200, 1024,690]);
+    set(2, 'visible', 'off');
     colormap('default');
     set (0, "defaultaxesfontsize", 12)
     set (0, "defaulttextfontsize", 16)

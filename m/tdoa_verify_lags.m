@@ -1,13 +1,20 @@
 ## -*- octave -*-
 
-function [tdoa,input,idx,xdi,eqs,c,nsigma]=tdoa_verify_lags(tdoa, input)
+function [tdoa,input,idx,xdi,eqs,c,nsigma]=tdoa_verify_lags(plot_info, tdoa, input)
+  status_json   = '  "constraints": {\n';
+  json_line_end = [",", " "];
+
   tic;
   n = numel(input);
   if n < 3
     ## select the cluster with the most entries
-    [_,idx_min] = min(vertcat(tdoa(1,2).cl.std))
-    tdoa(1,2).lags_filter = tdoa(1,2).lags_filter(idx_min,:)
+    [_,idx_min] = min(vertcat(tdoa(1,2).cl.std));
+    tdoa(1,2).lags_filter = tdoa(1,2).lags_filter(idx_min,:);
     printf('tdoa_verify_lags: [%.3f sec]\n', toc());
+    status_json = [status_json '    "status": "OK (no constraits for 2 stations)"\n  }\n'];
+    fid = fopen('status.json', 'a');
+    fprintf(fid, status_json);
+    fclose(fid);
     return
   end
 
@@ -85,15 +92,26 @@ function [tdoa,input,idx,xdi,eqs,c,nsigma]=tdoa_verify_lags(tdoa, input)
     end
   end
 
+  status_json = [status_json '    "equations": [\n'];
   ##combinations(comb_idx,:)
-  for j=1:numel(eqs)
+  m = numel(eqs);
+  for j=1:m
     cls_mean = [get_cl_ii(j,comb_idx).mean; get_cl_jj(j,comb_idx).mean; get_cl_kk(j,comb_idx).mean];
     cls_std  = [get_cl_ii(j,comb_idx).std   get_cl_jj(j,comb_idx).std   get_cl_kk(j,comb_idx).std];
 
+    dt_usec     = 1e6*[-1 +1 -1]*cls_mean;
+    err_dt_usec = 1e6*sqrt(sum(cls_std.**2));
     printf('test1 %3d: (%d,%d) (%d,%d) (%d,%d) [%+f,%+f,%+f] %+f %+f\n', ...
-           j, eqs(j).ii, eqs(j).jj, eqs(j).kk, cls_mean, ...
-           [-1 +1 -1]*cls_mean, [-1 +1 -1]*cls_mean/sqrt(sum(cls_std.**2)));
+           j, eqs(j).ii, eqs(j).jj, eqs(j).kk, cls_mean, dt_usec, dt_usec/err_dt_usec);
+    eq_status = "OK";
+    if ~isempty(idx_excl) && any(any([eqs(j).ii eqs(j).jj, eqs(j).kk] == idx_excl'))
+      eq_status = "excluded";
+    end
+    status_json = [status_json sprintf('      {"idx":[%d,%d,%d], "dt_usec":%g, "err_dt_usec":%g, "nsigma":%g, "status":"%s"}%s\n', ...
+                                       eqs(j).ii, eqs(j).jj(2), dt_usec, err_dt_usec, dt_usec/err_dt_usec, eq_status, ...
+                                       json_line_end(1+(j==m)))];
   end
+  status_json = [status_json '    ],\n'];
 
   ## prune lags_filter
   for i=1:size(idx,1)
@@ -106,29 +124,35 @@ function [tdoa,input,idx,xdi,eqs,c,nsigma]=tdoa_verify_lags(tdoa, input)
   end
 
   if ~isempty(idx_excl)
+    status_json = [status_json '    "excluded": ['];
     printf('tdoa_verify_lags: exluding ');
     for i=1:numel(idx_excl)
       input(idx_excl(i)).use = false;
       printf('%s(%d) ', input(idx_excl(i)).name, idx_excl(i));
+      status_json = [status_json sprintf('{"idx":%d, "name":"%s"}%s', idx_excl(i), input(idx_excl(i)).name, json_line_end(1+i==numel(idx_excl)))];
     end
+    status_json = [status_json '],\n'];
     printf('\n');
   end
 
   msg = {'OK', 'Warning: abs(nsigma)>3'};
   printf('tdoa_verify_lags: max(abs(nsigma))=%6.3f chi2/ndf=%.3f/%d=%6.3f %s [%.3f sec]\n',
          max_nsigma, sum_nsigma2,ndf, sum_nsigma2/ndf, msg{1+(max_nsigma > 3)}, toc());
+  status_json = [status_json sprintf('    "result": { "status": "%s", "max(abs(nsigma))":%.3f, "chi2":%.3f, "ndf":%d, "chi2/ndf":%.3f }\n  },\n', ...
+                                     msg{1+(max_nsigma > 3)}, max_nsigma, sum_nsigma2,ndf, sum_nsigma2/ndf)];
+  plot_info.save_json(plot_info, 'status.json', 'a', status_json);
 endfunction
 
 function [comb_idx,max_nsigma,sum_nsigma2]=find_min_nsigma(tdoa, input, idx, xdi, combinations, nsigma)
   [sum_nsigma2,nsigma_idx]   = sort(sum(nsigma.**2, 2));
   [sum_nsigma2_unique,ii,jj] = unique(sum_nsigma2);
-  n_sum = size(nsigma, 2)
+  n_sum = size(nsigma, 2);
   b     = sum_nsigma2_unique/n_sum < 3;
   ## __find_min_nsigma = sum(b)
   ## __xx = sum_nsigma2_unique(1:min(numel(sum_nsigma2_unique),10))'/n_sum
   ## when there is more than one solution with chi2/ndf < 3 select the one with maximum overlap
   if any(b)
-    sum_nsigma2 = sum_nsigma2_unique(b)
+    sum_nsigma2 = sum_nsigma2_unique(b);
     metric      = zeros(size(sum_nsigma2));
     for i=1:numel(sum_nsigma2)
       comb_idx = nsigma_idx(ii)(b)(i); # assert(sum_nsigma2(i) == sum(nsigma(comb_idx,:).**2))
@@ -147,8 +171,8 @@ function [comb_idx,max_nsigma,sum_nsigma2]=find_min_nsigma(tdoa, input, idx, xdi
       end
       metric(i) = sum(bf);
     end
-    __metric = metric'
-    [max_metric,idx_max] = max(metric)
+    ##__metric = metric'
+    [max_metric,idx_max] = max(metric);
     comb_idx = nsigma_idx(ii)(b)(idx_max);
   else
     idx_max  = 1;

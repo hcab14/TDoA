@@ -31,6 +31,7 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
   if plot_kiwi
     set(0,'defaultaxesposition', [0.08, 0.08, 0.90, 0.85]);
     figure(1, 'position', [100,100, 1024,690]);
+    set(1, 'visible', 'off');
     set(0, "defaultaxesfontsize", 12)
     set(0, "defaulttextfontsize", 16)
     plot_info.titlefontsize = 16;
@@ -52,6 +53,8 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
 
   if plot_kiwi
     printf('likely=%.2f,%.2f\n', most_likely_pos);
+    plot_info.save_json(plot_info, 'status.json', 'a', ...
+                        sprintf('  "likely_position": {"lat":%f, "lng":%f}\n}\n', most_likely_pos));
   end
   if ~isfield(plot_info, 'known_location')
     plot_info.known_location.coord = most_likely_pos;
@@ -62,8 +65,13 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
   for i=1:n_stn
     if input_data(i).use
       allnames = [input_data(i).name '-' allnames];
+    else
+      continue
     end
     for j=1+i:n_stn
+      if ~input_data(j).use
+        continue
+      end
       tic;
       title_extra = '';
       if plot_kiwi == false
@@ -91,7 +99,7 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
           print(sprintf('%s/%s-%s map.png', plot_info.dir, input_data(i).fname, input_data(j).fname), ...
                 '-dpng', '-S1024,690');
           print(sprintf('%s/%s-%s map.pdf', plot_info.dir, input_data(i).fname, input_data(j).fname), ...
-                '-dpng', '-S1024,690');
+                '-dpdf', '-S1024,690');
         catch err
           err_kiwi(5, err);
         end_try_catch

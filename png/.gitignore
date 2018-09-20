@@ -1,3 +1,4 @@
 *.png
 *.pdf
+*.json
 .DS_store

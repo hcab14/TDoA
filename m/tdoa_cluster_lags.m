@@ -1,6 +1,9 @@
 ## -*- octave -*-
 
-function tdoa=tdoa_cluster_lags(tdoa, input)
+function tdoa=tdoa_cluster_lags(plot_info, tdoa, input)
+  status_json   = '  "cross-correlations": {\n    "clusters": [\n';
+  json_line_end = [",", " "];
+
   n      = length(input);
   n_comb = 1;
   for i=1:n
@@ -11,9 +14,26 @@ function tdoa=tdoa_cluster_lags(tdoa, input)
       printf('tdoa_cluster_lags(%d,%d): num_clusters=%d [%.3f sec]\n', ...
              i,j, size(tdoa(i,j).lags_filter, 1), toc());
       n_comb *= size(tdoa(i,j).lags_filter,1);
+      status_json = [status_json sprintf('      {"idx":[%d,%d], "cls": [', i,j)];
+      m = size(tdoa(i,j).lags_filter, 1);
+      for k=1:m
+        lags = tdoa(i,j).lags(tdoa(i,j).lags_filter(k,:));
+        if isempty(lags)
+          dt_usec     = 0;
+          rms_dt_usec = Inf;
+        else
+          dt_usec     = 1e6*mean(lags);
+          rms_dt_usec = 1e6*std(lags);
+        end
+        status_json = [status_json sprintf('{"dt_usec":%f, "rms_dt_usec":%f}%s', ...
+                                           dt_usec, rms_dt_usec, json_line_end(1+(k==m)))];
+      end
+      status_json = [status_json sprintf(']}%s\n', json_line_end(1+(i==j-1 && j==n)))];
     end
   end
   printf('tdoa_cluster_lags: n_comb=%d\n', n_comb);
+  status_json = [status_json sprintf('    ],\n    "n_comb": %d\n  },\n', n_comb)];
+  plot_info.save_json(plot_info, 'status.json', 'a', status_json);
 endfunction
 
 function [cl,b,nsigma]=tdoa_cluster_lags_(b, lags, range)

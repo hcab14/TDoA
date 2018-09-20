@@ -1,8 +1,10 @@
 #!/bin/bash
 
 ## TDoA reprocessing using kiwiproxy data
+##   log files: $FILES_PATH/"num".log
+##   example:  FILES_PATH="path to files" ./proc_tdoa_kiwi.sh num1 num2 ...
 
-FILES_PATH=../files
+FILES_PATH=${FILES_PATH-../files} ## default is ../files
 
 function do_proc {
     local r=$1

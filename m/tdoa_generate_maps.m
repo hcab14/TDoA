@@ -14,8 +14,9 @@ function [tdoa,hSum]=tdoa_generate_maps(input, tdoa, plot_info)
   end
 
   ## (2) compute time differences to each grid point
-  n = length(input);
-  for i=1:n
+  n_stn      = length(input);
+  n_stn_used = sum(vertcat(input.use));
+  for i=1:n_stn
     if isfield(input, 'dt_map')
       dt{i} = interp2(input(i).dt_map.lon, input(i).dt_map.lat, input(i).dt_map.dt, a(:,2), a(:,1), 'pchip');
     else
@@ -25,19 +26,19 @@ function [tdoa,hSum]=tdoa_generate_maps(input, tdoa, plot_info)
 
 
   ## (3) compute number of std deviations for each pair of receivers for each grid point
-  hSum      = zeros(size(dt{1}));
-  for i=1:n
-    for j=1+i:n
-      tdoa(i,j).a = a;
+  hSum      = [];
+  for i=1:n_stn
+    for j=1+i:n_stn
       b = tdoa(i,j).lags_filter;
-      if sum(b)==0
-        tdoa(i,j).h = 20**2 * ones(size(hSum));
-      else
-        xlag = sum(tdoa(i,j).peaks(b).**2 .* tdoa(i,j).lags(b))              / sum(tdoa(i,j).peaks(b).**2);
-        slag = sum(tdoa(i,j).peaks(b).**2 .* (tdoa(i,j).lags(b) - xlag).**2) / sum(tdoa(i,j).peaks(b).**2);
-        tdoa(i,j).h = (dt{i}-dt{j}-xlag).**2 / slag;
+      tdoa(i,j).a = a;
+      if ~input(i).use || ~input(j).use || sum(b)==0
+        tdoa(i,j).h = 20**2 * ones(size(dt{i}));
+        continue;
       end
-      if isequal([i j], [1 2])
+      xlag = sum(tdoa(i,j).peaks(b).**2 .* tdoa(i,j).lags(b))              / sum(tdoa(i,j).peaks(b).**2);
+      slag = sum(tdoa(i,j).peaks(b).**2 .* (tdoa(i,j).lags(b) - xlag).**2) / sum(tdoa(i,j).peaks(b).**2);
+      tdoa(i,j).h = (dt{i}-dt{j}-xlag).**2 / slag;
+      if isempty(hSum)
         hSum  = tdoa(i,j).h;
       else
         hSum += tdoa(i,j).h;

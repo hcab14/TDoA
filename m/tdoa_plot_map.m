@@ -6,14 +6,16 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
   if isfield(plot_info, 'plot_kiwi') && plot_info.plot_kiwi == true
     plot_kiwi = true;
   end
-  
+
   plot_kiwi_json = false;
-  if isfield(plot_info, 'plot_kiwi_json') && plot_info.plot_kiwi_json == true
-    plot_kiwi_json = true;
+  if ~isfield(plot_info, 'plot_kiwi_json')
+    plot_info.plot_kiwi_json = false;
+  else
+    plot_kiwi_json = plot_info.plot_kiwi_json;
   end
 
   cmap = [linspace(1,0,100)' linspace(0,1,100)' zeros(100,1)     ## red to green
-            linspace(0,1,100)' ones(100,1)   linspace(0,1,100)']; ## green to white
+          linspace(0,1,100)' ones(100,1)   linspace(0,1,100)'];  ## green to white
   colormap(cmap);
 
   plot_info.h_max    = 20;
@@ -29,6 +31,7 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
   if plot_kiwi
     set(0,'defaultaxesposition', [0.08, 0.08, 0.90, 0.85]);
     figure(1, 'position', [100,100, 1024,690]);
+    set(1, 'visible', 'off');
     set(0, "defaultaxesfontsize", 12)
     set(0, "defaulttextfontsize", 16)
     plot_info.titlefontsize = 16;
@@ -40,15 +43,18 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
     plot_info.labelfontsize =  7.5;
   end
 
-  n = length(input_data);
+  n_stn      = length(input_data);
+  n_stn_used = sum(vertcat(input_data.use));
 
   most_likely_pos = get_most_likely_pos(plot_info,
-                                        reshape(sqrt(hSum)/n,
+                                        reshape(sqrt(hSum)/n_stn_used,
                                                 length(plot_info.lon),
                                                 length(plot_info.lat))');
 
   if plot_kiwi
     printf('likely=%.2f,%.2f\n', most_likely_pos);
+    plot_info.save_json(plot_info, 'status.json', 'a', ...
+                        sprintf('  "likely_position": {"lat":%f, "lng":%f}\n}\n', most_likely_pos));
   end
   if ~isfield(plot_info, 'known_location')
     plot_info.known_location.coord = most_likely_pos;
@@ -56,13 +62,20 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
   end
 
   allnames = '';
-  for i=1:n
-    allnames = [input_data(i).name '-' allnames];
-    for j=1+i:n
+  for i=1:n_stn
+    if input_data(i).use
+      allnames = [input_data(i).name '-' allnames];
+    else
+      continue
+    end
+    for j=1+i:n_stn
+      if ~input_data(j).use
+        continue
+      end
       tic;
       title_extra = '';
       if plot_kiwi == false
-        subplot(n-1,n-1, (n-1)*(i-1)+j-1);
+        subplot(n_stn-1,n_stn-1, (n_stn-1)*(i-1)+j-1);
       else
         title_extra = plot_info.title;
         clf;
@@ -72,12 +85,12 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
                    sprintf('dt=%.0fus RMS(dt)=%.0fus', mean(tdoa(i,j).lags(b))*1e6, std(tdoa(i,j).lags(b))*1e6)
                  };
       h = reshape(sqrt(tdoa(i,j).h), length(plot_info.lon), length(plot_info.lat))';
-      plot_map(plot_info,
-               h,
-               titlestr,
-               coastlines,
-               ~false);
-      printf('tdoa_plot_map(%d,%d) %.2f sec\n', i,j, toc());
+      plot_info = plot_map(plot_info,
+                           h,
+                           titlestr,
+                           coastlines,
+                           ~false);
+      printf('tdoa_plot_map(%d,%d): [%.3f sec]\n', i,j, toc());
       if plot_kiwi
         plot_location(plot_info, input_data(i).coord, input_data(i).name, false);
         plot_location(plot_info, input_data(j).coord, input_data(j).name, false);
@@ -86,7 +99,7 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
           print(sprintf('%s/%s-%s map.png', plot_info.dir, input_data(i).fname, input_data(j).fname), ...
                 '-dpng', '-S1024,690');
           print(sprintf('%s/%s-%s map.pdf', plot_info.dir, input_data(i).fname, input_data(j).fname), ...
-                '-dpng', '-S1024,690');
+                '-dpdf', '-S1024,690');
         catch err
           err_kiwi(5, err);
         end_try_catch
@@ -95,7 +108,7 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
             [bb_lon, bb_lat] = save_as_png_for_map(plot_info,
                                                    sprintf('%s/%s-%s_for_map.png', plot_info.dir, input_data(i).fname, input_data(j).fname),
                                                    h);
-    
+
             [_,h]=contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15], '--', 'linecolor', 0.7*[1 1 1]);
             save_as_json_for_map(sprintf('%s/%s-%s_contour_for_map.json', plot_info.dir, input_data(i).fname, input_data(j).fname),
                                  sprintf('%s/%s-%s_for_map.png', plot_info.dir, input_data(i).fname, input_data(j).fname),
@@ -108,16 +121,16 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
     end
   end
   if plot_kiwi == false
-    for i=1:n
-      for j=1+i:n
-        subplot(n-1,n-1, (n-1)*(i-1)+j-1);
+    for i=1:n_stn
+      for j=1+i:n_stn
+        subplot(n_stn-1,n_stn-1, (n_stn-1)*(i-1)+j-1);
         plot_location(plot_info, input_data(i).coord, input_data(i).name, false);
         plot_location(plot_info, input_data(j).coord, input_data(j).name, false);
         set(colorbar(), 'XLabel', '\sigma')
       end
     end
 
-    switch n
+    switch n_stn
       case {3}
         subplot(2,2,3);
       case {4}
@@ -127,7 +140,7 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
       case {6}
         subplot(3,3,7);
       otherwise
-        error(sprintf('n=%d is not supported'));
+        error(sprintf('n_stn=%d is not supported', n_stn));
     end
   else
     clf;
@@ -139,20 +152,20 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
     titlestr = [titlestr ' ' plot_info.title];
   end
 
-  h = reshape(sqrt(hSum)/n, length(plot_info.lon), length(plot_info.lat))';
+  h = reshape(sqrt(hSum)/n_stn_used, length(plot_info.lon), length(plot_info.lat))';
 
-  plot_map(plot_info,
-           h,
-           titlestr,
-           coastlines,
-           true);
+  plot_info = plot_map(plot_info,
+                       h,
+                       titlestr,
+                       coastlines,
+                       true);
 
-  for i=1:n
+  for i=1:n_stn
     plot_location(plot_info, input_data(i).coord, input_data(i).name, false);
   end
 
   set(colorbar(),'XLabel', '\chi^2/ndf')
-  printf('tdoa_plot_map_combined %.2f sec\n', toc());
+  printf('tdoa_plot_map_combined: [%.3f sec]\n', toc());
 
   if plot_kiwi == false
     ha = axes('Position', [0 0 1 1], ...
@@ -214,7 +227,7 @@ function [bb_lon, bb_lat, idx_lon, idx_lat] = find_bounding_box(plot_info, h)
 endfunction
 
 
-function plot_map(plot_info, h, titlestr, coastlines, do_plot_contour)
+function plot_info=plot_map(plot_info, h, titlestr, coastlines, do_plot_contour)
   try
     imagesc(plot_info.lon([1 end]), plot_info.lat([1 end]), h, [0 20]);
   catch err
@@ -228,9 +241,9 @@ function plot_map(plot_info, h, titlestr, coastlines, do_plot_contour)
   if do_plot_contour
     [_,h]=contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15], '--', 'linecolor', 0.7*[1 1 1]);
   end
-  plot_coastlines(coastlines,
-                  [plot_info.lon(1)   plot_info.lat(1)],
-                  [plot_info.lon(end) plot_info.lat(end)]);
+  plot_info = plot_coastlines(plot_info, coastlines,
+                              [plot_info.lon(1)   plot_info.lat(1)],
+                              [plot_info.lon(end) plot_info.lat(end)]);
   if isfield(plot_info, 'known_location')
     for k=1:length(plot_info.known_location)
       plot_location(plot_info, plot_info.known_location(k).coord, plot_info.known_location(k).name, true);

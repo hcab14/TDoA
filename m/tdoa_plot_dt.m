@@ -9,6 +9,7 @@ function tdoa=tdoa_plot_dt(input, tdoa, plot_info, dt)
   if plot_kiwi
     set(0, 'defaultaxesposition', [0.1, 0.1, 0.8, 0.8]);
     figure(2, 'position', [200,200, 1024,690]);
+    set(2, 'visible', 'off');
     colormap('default');
     set (0, "defaultaxesfontsize", 12)
     set (0, "defaulttextfontsize", 16)
@@ -17,7 +18,7 @@ function tdoa=tdoa_plot_dt(input, tdoa, plot_info, dt)
     colormap('default');
   end
 
-  bin_width = 0.25/12001;
+  bin_width = 0.25/mean(cat(1,input.fs));
 
   n = length(input);
   for i=1:n
@@ -34,7 +35,7 @@ function tdoa=tdoa_plot_dt(input, tdoa, plot_info, dt)
       bins = tmm(1)+bin_width*(0.5+[0:nx-1]);
       a    = zeros(ny,nx);
       for k=1:ny
-        a(k,:)  = interp1(tdoa(i,j).t{k}, abs(tdoa(i,j).r{k}), bins);
+        a(k,:)  = interp1(tdoa(i,j).t{k}, abs(tdoa(i,j).r{k}), bins, 0);
         ##a(k,:) /= (1e-10 + max(abs(a(k,:))));
       end
       tdoa(i,j).bins = bins;
@@ -67,7 +68,7 @@ function tdoa=tdoa_plot_dt(input, tdoa, plot_info, dt)
       plot(1e3*tdoa(i,j).lags(b), tdoa(i,j).gpssec(b), '*r');
       plot(1e3*tdoa(i,j).lags(b), tdoa(i,j).gpssec(b), '*r');
       hold off;
-      printf('tdoa_plot_dt(%d,%d) %.2f sec\n', i,j, toc());
+      printf('tdoa_plot_dt(%d,%d): [%.3f sec]\n', i,j, toc());
       if plot_kiwi
         try
           print('-dpng','-S1024,690', sprintf('%s/%s-%s dt.png', plot_info.dir, input(i).fname, input(j).fname));

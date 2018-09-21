@@ -9,7 +9,8 @@ function tdoa=tdoa_compute_lags(input, peak_search)
       compute_lag(input(i).t, input(i).z, input(i).fs,
                   input(j).t, input(j).z, input(j).fs,
                   peak_search);
-      printf("tdoa_compute_lags(%d,%d) %.2f sec\n", i,j,toc());
+      tdoa(i,j).range = peak_search.range;
+      printf("tdoa_compute_lags(%d,%d): [%.3f sec]\n", i,j,toc());
     end
   end
 endfunction

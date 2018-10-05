@@ -1,5 +1,8 @@
 all run: kiwi_extension
 
+install:
+	mkoctfile kiwiclient/read_kiwi_iq_wav.cc
+
 update:
 	git pull --recurse-submodules
 

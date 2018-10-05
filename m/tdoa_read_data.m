@@ -33,8 +33,8 @@ function [err,input]=tdoa_read_data(plot_info, input, dir)
       continue
     end
 
-    input(i).t      = cat(1,xx.t)(1000:end);
-    input(i).z      = cat(1,xx.z)(1000:end);
+    input(i).t      = cat(1,xx.t);
+    input(i).z      = cat(1,xx.z);
     input(i).gpssec = cat(1,x.gpssec)+1e-9*cat(1,x.gpsnsec);
     if numel(input(i).t) == 0 || numel(input(i).gpssec) <= 2
       printf('tdoa_read_data: %-40s number of samples = %d == 0 || number of blocks = %d <= 2\n', ...

@@ -14,12 +14,12 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
     plot_kiwi_json = plot_info.plot_kiwi_json;
   end
 
-  cmap = [linspace(1,0,100)' linspace(0,1,100)' zeros(100,1)     ## red to green
-          linspace(0,1,100)' ones(100,1)   linspace(0,1,100)'];  ## green to white
+  cmap = single([linspace(1,0,100)' linspace(0,1,100)' zeros(100,1)     ## red to green
+                 linspace(0,1,100)' ones(100,1)   linspace(0,1,100)']); ## green to white
   colormap(cmap);
 
   plot_info.h_max    = 20;
-  plot_info.z_to_rgb = @(h) ind2rgb(1+round(h/plot_info.h_max*(size(cmap,1)-1)), cmap);
+  plot_info.z_to_rgb = @(h) single(ind2rgb(1+round(h/plot_info.h_max*(size(cmap,1)-1)), cmap));
 
   [tdoa,hSum] = tdoa_generate_maps(input_data, tdoa, plot_info);
 
@@ -31,7 +31,7 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
   if plot_kiwi
     set(0,'defaultaxesposition', [0.08, 0.08, 0.90, 0.85]);
     figure(1, 'position', [100,100, 1024,690]);
-    set(1, 'visible', 'off');
+    ##set(1, 'visible', 'off');
     set(0, "defaultaxesfontsize", 12)
     set(0, "defaulttextfontsize", 16)
     plot_info.titlefontsize = 16;
@@ -264,7 +264,7 @@ function [bb_lon,bb_lat]=save_as_png_for_map(plot_info, filename, h)
   ## save as png (ground overlay for google maps)
   h        = flipud(h);
   rgb      = plot_info.z_to_rgb(h);
-  alpha    = 1*(h != plot_info.h_max);
+  alpha    = single(h != plot_info.h_max);
   ## fade out starting with sigma=6
   b        = h > 0.3*plot_info.h_max & h < plot_info.h_max;
   alpha(b) = (plot_info.h_max-h(b))/(plot_info.h_max*(1-0.3));

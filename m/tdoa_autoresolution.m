@@ -19,6 +19,6 @@ function plot_info=tdoa_autoresolution(plot_info)
   idx  = find(n < 200e3)(1);
 
   ## add lat and lon fields to plot_info with the determined bin width
-  plot_info.lat = [plot_info.lat_range(1):bin_widths(idx):plot_info.lat_range(2)];
-  plot_info.lon = [plot_info.lon_range(1):bin_widths(idx):plot_info.lon_range(2)];
+  plot_info.lat = single([plot_info.lat_range(1):bin_widths(idx):plot_info.lat_range(2)]);
+  plot_info.lon = single([plot_info.lon_range(1):bin_widths(idx):plot_info.lon_range(2)]);
 endfunction

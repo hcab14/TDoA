@@ -1,6 +1,6 @@
 all run: kiwi_extension
 
-install: oct/read_kiwi_iq_wav.oct
+install: oct/read_kiwi_iq_wav.oct oct/json_save_cc.oct
 
 update:
 	git pull --recurse-submodules

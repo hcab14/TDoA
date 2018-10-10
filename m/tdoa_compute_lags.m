@@ -10,7 +10,11 @@ function [tdoa,status]=tdoa_compute_lags(input, peak_search)
       compute_lag(input(i).t, input(i).z, input(i).fs,
                   input(j).t, input(j).z, input(j).fs,
                   peak_search);
-      tdoa(i,j).range = peak_search.range;
+      tdoa(i,j).range       = peak_search.range;
+      tdoa(i,j).lags_filter = ~isnan(tdoa(i,j).lags);
+      if peak_search.remove_outliers
+        tdoa(i,j).lags_filter = tdoa_remove_outliers(tdoa(i,j).lags_filter, tdoa(i,j).lags, 3, 1e-3, 0);
+      end
       printf("tdoa_compute_lags(%d,%d): [%.3f sec]\n", i,j,0);
       status.per_pair(counter).idx      = [i j];
       status.per_pair(counter).time_sec = toc();

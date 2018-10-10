@@ -1,6 +1,7 @@
 ## -*- octave -*-
 
-function tdoa=tdoa_compute_lags(input, peak_search)
+function [tdoa,status]=tdoa_compute_lags(input, peak_search)
+  counter = 1;
   n = length(input);
   for i=1:n
     for j=i+1:n
@@ -10,7 +11,10 @@ function tdoa=tdoa_compute_lags(input, peak_search)
                   input(j).t, input(j).z, input(j).fs,
                   peak_search);
       tdoa(i,j).range = peak_search.range;
-      printf("tdoa_compute_lags(%d,%d): [%.3f sec]\n", i,j,toc());
+      printf("tdoa_compute_lags(%d,%d): [%.3f sec]\n", i,j,0);
+      status.per_pair(counter).idx      = [i j];
+      status.per_pair(counter).time_sec = toc();
+      counter += 1;
     end
   end
 endfunction

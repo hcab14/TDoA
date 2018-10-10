@@ -1,17 +1,13 @@
 ## -*- octave -*-
 
-function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
-
+function [tdoa,status]=tdoa_plot_map(input_data, tdoa, plot_info)
   plot_kiwi = false;
   if isfield(plot_info, 'plot_kiwi') && plot_info.plot_kiwi == true
     plot_kiwi = true;
   end
 
-  plot_kiwi_json = false;
   if ~isfield(plot_info, 'plot_kiwi_json')
     plot_info.plot_kiwi_json = false;
-  else
-    plot_kiwi_json = plot_info.plot_kiwi_json;
   end
 
   cmap = single([linspace(1,0,100)' linspace(0,1,100)' zeros(100,1)     ## red to green
@@ -31,7 +27,7 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
   if plot_kiwi
     set(0,'defaultaxesposition', [0.08, 0.08, 0.90, 0.85]);
     figure(1, 'position', [100,100, 1024,690]);
-    ##set(1, 'visible', 'off');
+    set(1, 'visible', plot_info.visible);
     set(0, "defaultaxesfontsize", 12)
     set(0, "defaulttextfontsize", 16)
     plot_info.titlefontsize = 16;
@@ -51,10 +47,10 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
                                                 length(plot_info.lon),
                                                 length(plot_info.lat))');
 
+  status.likely_position.lat = most_likely_pos(1);
+  status.likely_position.lng = most_likely_pos(2);
   if plot_kiwi
     printf('likely=%.2f,%.2f\n', most_likely_pos);
-    plot_info.save_json(plot_info, 'status.json', 'a', ...
-                        sprintf('  "likely_position": {"lat":%f, "lng":%f}\n}\n', most_likely_pos));
   end
   if ~isfield(plot_info, 'known_location')
     plot_info.known_location.coord = most_likely_pos;
@@ -95,27 +91,18 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
         plot_location(plot_info, input_data(i).coord, input_data(i).name, false);
         plot_location(plot_info, input_data(j).coord, input_data(j).name, false);
         set(colorbar(), 'XLabel', '\sigma')
-        try
-          print(sprintf('%s/%s-%s map.png', plot_info.dir, input_data(i).fname, input_data(j).fname), ...
-                '-dpng', '-S1024,690');
-          print(sprintf('%s/%s-%s map.pdf', plot_info.dir, input_data(i).fname, input_data(j).fname), ...
-                '-dpdf', '-S1024,690');
-        catch err
-          err_kiwi(5, err);
-        end_try_catch
+        print(sprintf('%s/%s-%s map.png', plot_info.dir, input_data(i).fname, input_data(j).fname), ...
+              '-dpng', '-S1024,690');
+        print(sprintf('%s/%s-%s map.pdf', plot_info.dir, input_data(i).fname, input_data(j).fname), ...
+              '-dpdf', '-S1024,690');
         if plot_info.plot_kiwi_json
-          try
-            [bb_lon, bb_lat] = save_as_png_for_map(plot_info,
-                                                   sprintf('%s/%s-%s_for_map.png', plot_info.dir, input_data(i).fname, input_data(j).fname),
-                                                   h);
-
-            [_,h]=contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15], '--', 'linecolor', 0.7*[1 1 1]);
-            save_as_json_for_map(sprintf('%s/%s-%s_contour_for_map.json', plot_info.dir, input_data(i).fname, input_data(j).fname),
-                                 sprintf('%s/%s-%s_for_map.png', plot_info.dir, input_data(i).fname, input_data(j).fname),
-                                 h, bb_lon, bb_lat, plot_info, ~false);
-          catch err
-            err_kiwi(8, err);
-          end_try_catch
+          [bb_lon, bb_lat] = save_as_png_for_map(plot_info,
+                                                 sprintf('%s/%s-%s_for_map.png', plot_info.dir, input_data(i).fname, input_data(j).fname),
+                                                 h);
+          [_,h]=contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15], '--', 'linecolor', 0.7*[1 1 1]);
+          save_as_json_for_map(sprintf('%s/%s-%s_contour_for_map.json', plot_info.dir, input_data(i).fname, input_data(j).fname),
+                               sprintf('%s/%s-%s_for_map.png', plot_info.dir, input_data(i).fname, input_data(j).fname),
+                               h, bb_lon, bb_lat, plot_info, ~false);
         end
       end
     end
@@ -172,7 +159,7 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
               'Xlim',     [0 1], ...
               'Ylim',     [0 1], ...
               'Box',      'off', ...
-              'Visible',  'off', ...
+              'Visible',  plot_info.visible, ...
               'Units',    'normalized', ...
               'clipping', 'off');
     text(0.5, 0.98,  plot_info.title, ...
@@ -182,22 +169,14 @@ function tdoa=tdoa_plot_map(input_data, tdoa, plot_info)
     print('-dpng','-S900,600', fullfile('png', sprintf('%s.png', plot_info.plotname)));
     print('-dpdf','-S900,600', fullfile('pdf', sprintf('%s.pdf', plot_info.plotname)));
   else
-    try
-      print('-dpng','-S1024,690', sprintf('%s/%s.png', plot_info.dir, plot_info.plotname));
-      print('-dpdf','-S1024,690', sprintf('%s/%s.pdf', plot_info.dir, plot_info.plotname));
-    catch err
-      err_kiwi(6, err);
-    end_try_catch
+    print('-dpng','-S1024,690', sprintf('%s/%s.png', plot_info.dir, plot_info.plotname));
+    print('-dpdf','-S1024,690', sprintf('%s/%s.pdf', plot_info.dir, plot_info.plotname));
     if plot_info.plot_kiwi_json
-      try
-        [bb_lon, bb_lat] = save_as_png_for_map(plot_info, sprintf('%s/%s_for_map.png', plot_info.dir, plot_info.plotname), h);
-        [_,h]=contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15], '--', 'linecolor', 0.7*[1 1 1]);
-        save_as_json_for_map(sprintf('%s/%s_contour_for_map.json', plot_info.dir, plot_info.plotname),
-                             sprintf('%s/%s_for_map.png', plot_info.dir, plot_info.plotname),
-                             h, bb_lon, bb_lat, plot_info, true);
-      catch err
-        err_kiwi(9, err);
-      end_try_catch
+      [bb_lon, bb_lat] = save_as_png_for_map(plot_info, sprintf('%s/%s_for_map.png', plot_info.dir, plot_info.plotname), h);
+      [_,h]=contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15], '--', 'linecolor', 0.7*[1 1 1]);
+      save_as_json_for_map(sprintf('%s/%s_contour_for_map.json', plot_info.dir, plot_info.plotname),
+                           sprintf('%s/%s_for_map.png', plot_info.dir, plot_info.plotname),
+                           h, bb_lon, bb_lat, plot_info, true);
     end
   end
 endfunction
@@ -228,11 +207,7 @@ endfunction
 
 
 function plot_info=plot_map(plot_info, h, titlestr, coastlines, do_plot_contour)
-  try
-    imagesc(plot_info.lon([1 end]), plot_info.lat([1 end]), h, [0 20]);
-  catch err
-    err_kiwi(10, err);
-  end_try_catch
+  imagesc(plot_info.lon([1 end]), plot_info.lat([1 end]), h, [0 20]);
   set(gca,'YDir','normal');
   xlabel('longitude (deg)');
   ylabel('latitude (deg)');
@@ -274,66 +249,28 @@ function [bb_lon,bb_lat]=save_as_png_for_map(plot_info, filename, h)
 endfunction
 
 function save_as_json_for_map(filename, pfn, h, bb_lon, bb_lat, plot_info, plot_contour)
-  fid = fopen(filename, 'w');
-  ## bounding box
-  fprintf(fid, '{"filename": "%s",\n', pfn);
-  fprintf(fid, '"imgBounds": {\n')
-  fprintf(fid, '  "south": %g,\n', bb_lat(1))
-  fprintf(fid, '  "north": %g,\n', bb_lat(2))
-  fprintf(fid, '  "west": %g,\n',  bb_lon(1))
-  fprintf(fid, '  "east": %g},\n', bb_lon(2))
-
-  fprintf(fid, '"plot_contour": %d,\n', plot_contour);
-
-  fprintf(fid, '"polygons": [');
+  s.filename     = pfn;
+  s.imgBounds    = struct('south', bb_lat(1),
+                          'north', bb_lat(2),
+                          'east',  bb_lon(1),  ## NOTE: east and west were reversed before
+                          'west',  bb_lon(2));
+  s.plot_coutour = plot_contour;
+  get_rgb = @(x) round(255*(plot_info.z_to_rgb(x)));
   c = get(h);
-  ## loop over plot handle children
-  ## (1) closed contours -> Polygon
-  polygon_colors = '';
-  is_first       = true;
-  if ~plot_contour
-    c.children = [];
-  end
   for i=1:length(c.children)
     ci = get(c.children(i));
-    if ~isnan(ci.vertices(end,end))
-      if ~is_first
-        fprintf(fid, ',');
-      end
-      is_first = false;
-      fprintf(fid, '[');
-      fprintf(fid, '{"lng":%g, "lat":%g}\n', ci.vertices(1,:)')
-      fprintf(fid, ',{"lng":%g, "lat":%g}\n', ci.vertices(2:end,:)')
-      fprintf(fid, ']\n');
-      polygon_colors = [polygon_colors sprintf('"#%02x%02x%02x",', round(255*(plot_info.z_to_rgb(ci.cdata))))];
+    if ~isnan(ci.vertices(end,end)) ## closed contours -> polygons
+      s.polygons{end+1} = struct('lng', num2cell(ci.vertices(:,1)),
+                                 'lat', num2cell(ci.vertices(:,2)));
+      s.polygon_colors{end+1} = sprintf('#%02x%02x%02x', get_rgb(ci.cdata));
+    else                            ## open  contours -> polylines
+      s.polylines{end+1} = struct('lng', num2cell(ci.vertices(1:end-1,1)),
+                                  'lat', num2cell(ci.vertices(1:end-1,2)));
+      s.polyline_colors{end+1} = sprintf('#%02x%02x%02x', get_rgb(ci.cdata));
     end
   end
-  if length(polygon_colors) != 0
-    polygon_colors(end)=[];
-  end
-  fprintf(fid, '],\n"polygon_colors": [%s],\n', polygon_colors);
-  fprintf(fid, '"polylines": [');
-  ## (2) open contours -> Polyline
-  polyline_colors = '';
-  is_first        = true;
-  for i=1:length(c.children)
-    ci = get(c.children(i));
-    if isnan(ci.vertices(end,end))
-      if ~is_first
-        fprintf(fid, ',');
-      end
-      is_first = false;
-      fprintf(fid, '[');
-      fprintf(fid, '{"lng":%g, "lat":%g}\n', ci.vertices(1,:)')
-      fprintf(fid, ',{"lng":%g, "lat":%g}\n', ci.vertices(2:end-1,:)')
-      fprintf(fid, ']\n');
-      polyline_colors = [polyline_colors sprintf('"#%02x%02x%02x",', round(255*(plot_info.z_to_rgb(ci.cdata))))];
-    end
-  end
-  if length(polyline_colors) != 0
-    polyline_colors(end)=[];
-  end
-  fprintf(fid, '],\n"polyline_colors": [%s]\n}\n', polyline_colors);
+  fid = fopen(filename, 'w');
+  json_save_cc(fid, s);
   fclose(fid);
 endfunction
 
@@ -367,10 +304,3 @@ function [lat,lon]=plot_circle(s)
   lat *= 180/pi;
   lon *= 180/pi;
 endfunction
-
-function err_kiwi(code, err)
-  printf(["\n" err.identifier "\n"]);
-  printf([err.message "\n"]);
-  dbstack()
-  tdoa_err_kiwi(code);
-end

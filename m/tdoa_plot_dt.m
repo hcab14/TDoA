@@ -2,14 +2,14 @@
 
 function tdoa=tdoa_plot_dt(input, tdoa, plot_info, dt)
   plot_kiwi = false;
-  if isfield(plot_info, 'plot_kiwi') && plot_info.plot_kiwi == true
-    plot_kiwi = true;
+  if isfield(plot_info, 'plot_kiwi')
+    plot_kiwi = plot_info.plot_kiwi;
   end
 
   if plot_kiwi
     set(0, 'defaultaxesposition', [0.1, 0.1, 0.8, 0.8]);
     figure(2, 'position', [200,200, 1024,690]);
-    set(2, 'visible', 'off');
+    set(2, 'visible', plot_info.visible);
     colormap('default');
     set (0, "defaultaxesfontsize", 12)
     set (0, "defaulttextfontsize", 16)
@@ -24,7 +24,7 @@ function tdoa=tdoa_plot_dt(input, tdoa, plot_info, dt)
   for i=1:n
     for j=i+1:n
       tic;
-      if plot_kiwi == false
+      if ~plot_kiwi
         subplot(n-1,n-1, (n-1)*(i-1)+j-1);
       else
         clf;
@@ -36,7 +36,6 @@ function tdoa=tdoa_plot_dt(input, tdoa, plot_info, dt)
       a    = zeros(ny,nx);
       for k=1:ny
         a(k,:)  = interp1(tdoa(i,j).t{k}, abs(tdoa(i,j).r{k}), bins, 0);
-        ##a(k,:) /= (1e-10 + max(abs(a(k,:))));
       end
       tdoa(i,j).bins = bins;
       imagesc(1e3*bins, tdoa(i,j).gpssec, a, [0 1]);
@@ -56,7 +55,7 @@ function tdoa=tdoa_plot_dt(input, tdoa, plot_info, dt)
         line(t0+1e3*dt*[-1 1], tdoa(i,j).time_cut(1), 'color', 'red', 'linewidth', 0.2);
         line(t0+1e3*dt*[-1 1], tdoa(i,j).time_cut(2), 'color', 'red', 'linewidth', 0.2);
       end
-      if plot_kiwi == false
+      if ~plot_kiwi
         set(gca, 'fontsize', 6);
       end
       tdoa(i,j).a = a;
@@ -70,21 +69,17 @@ function tdoa=tdoa_plot_dt(input, tdoa, plot_info, dt)
       hold off;
       printf('tdoa_plot_dt(%d,%d): [%.3f sec]\n', i,j, toc());
       if plot_kiwi
-        try
-          print('-dpng','-S1024,690', sprintf('%s/%s-%s dt.png', plot_info.dir, input(i).fname, input(j).fname));
-          print('-dpdf','-S1024,690', sprintf('%s/%s-%s dt.pdf', plot_info.dir, input(i).fname, input(j).fname));
-        catch
-          tdoa_err_kiwi(7);
-        end_try_catch
+        print('-dpng','-S1024,690', sprintf('%s/%s-%s dt.png', plot_info.dir, input(i).fname, input(j).fname));
+        print('-dpdf','-S1024,690', sprintf('%s/%s-%s dt.pdf', plot_info.dir, input(i).fname, input(j).fname));
       end
     end
   end
-  if plot_kiwi == false
+  if ~plot_kiwi
     ha = axes('Position', [0 0 1 1], ...
               'Xlim',     [0 1], ...
               'Ylim',     [0 1], ...
               'Box',      'off', ...
-              'Visible',  'off', ...
+              'Visible',  plot_info.visible, ...
               'Units',    'normalized', ...
               'clipping', 'off');
     text(0.5, 0.98,  plot_info.title, 'fontweight', 'bold', 'horizontalalignment', 'center', 'fontsize', 15);

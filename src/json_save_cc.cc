@@ -5,30 +5,34 @@ void oct_printf(octave::stream& s, std::string fmt, octave_value const& ov=octav
   s.printf(fmt, ov, "");
 }
 
-void print_tabs(octave::stream& s, int lvl) {
+void print_tabs(octave::stream& s, bool sep, int lvl) {
+  if (!sep)
+    return;
   for (int i=0; i<lvl; ++i)
     oct_printf(s, "\t");
 }
 
-void json_save_object(octave::stream& s, octave_value const& ov, int lvl);
+void json_save_object(octave::stream& s, bool sep, octave_value const& ov, int lvl);
 
-void json_save_struct(octave::stream& s, octave_map const& map, int lvl, octave_idx_type idx=0) {
-  oct_printf(s, "{\n");
+void json_save_struct(octave::stream& s, bool sep, octave_map const& map, int lvl, octave_idx_type idx=0) {
+  oct_printf(s, "{%s", sep ? "\n" : "");
   for (octave_map::const_iterator i=map.begin(), iend=map.end(); i!=iend;) {
-    print_tabs(s, lvl);
-    oct_printf(s, "\"%s\": ", map.key(i).c_str());
-    json_save_object(s, map.contents(i)(idx), lvl);
+    print_tabs(s, sep, lvl);
+    oct_printf(s, "\"%s\":", map.key(i).c_str());
+    if (sep)
+      oct_printf(s, " ");
+    json_save_object(s, sep, map.contents(i)(idx), lvl);
     octave_map::const_iterator j = ++i;
     if (j == iend)
-      oct_printf(s, "\n");
+      oct_printf(s, "%s", sep ? "\n" : "");
     else
-      oct_printf(s, ",\n");
+      oct_printf(s, ",%s", sep ? "\n" : "");
   }
-  print_tabs(s, lvl-1);
+  print_tabs(s, sep, lvl-1);
   oct_printf(s, "}");
 }
 
-void json_save_num(octave::stream& s, octave_value const& ov, bool islogical=false) {
+void json_save_num(octave::stream& s, bool sep, octave_value const& ov, bool islogical=false) {
   if (ov.islogical() || islogical) {
     oct_printf(s, ov.bool_value() ? "true" : "false");
   } else if (ov.isinf().bool_value()) {
@@ -39,40 +43,40 @@ void json_save_num(octave::stream& s, octave_value const& ov, bool islogical=fal
     oct_printf(s, "%g", ov);
   }
 }
-void json_save_object(octave::stream& s, octave_value const& ov, int lvl) {
+void json_save_object(octave::stream& s, bool sep, octave_value const& ov, int lvl) {
   octave_idx_type const n = ov.numel();
   if (n == 0) {
     oct_printf(s, "[]");
   } else if (ov.isstruct()) {
     if (n == 1) {
-      json_save_struct(s, ov.map_value(), lvl+1, 0);
+      json_save_struct(s, sep, ov.map_value(), lvl+1, 0);
     } else {
-      oct_printf(s, "[\n");
+      oct_printf(s, "[%s", sep ? "\n" : "");
       for (octave_idx_type i=0; i<n; ++i) {
-        print_tabs(s, lvl+1);
-        json_save_struct(s, ov.map_value(), lvl+2, i);
-        if (i+1 == n) {
-          oct_printf(s, "\n");
-        } else {
-          oct_printf(s, ",\n");
+        print_tabs(s, sep, lvl+1);
+        json_save_struct(s, sep, ov.map_value(), lvl+2, i);
+        if (i+1 != n) {
+          oct_printf(s, ",");
         }
+        if (sep)
+          oct_printf(s, "\n");
       }
-      print_tabs(s, lvl);
+      print_tabs(s, sep, lvl);
       oct_printf(s, "]");
     }
   } else if (ov.iscell()) {
-    oct_printf(s, "[\n");
-    print_tabs(s, lvl+1);
+    oct_printf(s, "[%s", sep ? "\n" : "");
+    print_tabs(s, sep, lvl+1);
     for (octave_idx_type i=0; i<n; ++i) {
-      json_save_object(s, ov.list_value()(i), lvl+1);
+      json_save_object(s, sep, ov.list_value()(i), lvl+1);
       if (i+1 == n) {
-        oct_printf(s, "\n");
+        oct_printf(s, "%s", sep ? "\n" : "");
       } else {
-        oct_printf(s, ",\n");
-        print_tabs(s, lvl+1);
+        oct_printf(s, ",%s", sep ? "\n" : "");
+        print_tabs(s, sep, lvl+1);
       }
     }
-    print_tabs(s, lvl);
+    print_tabs(s, sep, lvl);
     oct_printf(s, "]");
   } else if (ov.is_sq_string()) {
     std::string const str = octave::regexp::replace("\"", ov.string_value(), "\\\\\"");
@@ -82,34 +86,35 @@ void json_save_object(octave::stream& s, octave_value const& ov, int lvl) {
   } else if (ov.is_matrix_type() && n>1) {
     oct_printf(s, "[");
     for (octave_idx_type i=0; i<n; ++i) {
-      json_save_num(s, ov.islogical() ? ov.bool_array_value()(i) : ov.array_value()(i),
+      json_save_num(s, sep, ov.islogical() ? ov.bool_array_value()(i) : ov.array_value()(i),
                     ov.islogical());
       if (i+1 < n)
         oct_printf(s, ",");
     }
     oct_printf(s, "]");
   } else if (ov.is_scalar_type()) {
-    json_save_num(s, ov);
+    json_save_num(s, sep, ov);
   }
 }
 
 DEFUN_DLD (json_save_cc,
            args,
            ,
-           "Usage: json_save_cc(fid, obj);")
+           "Usage: json_save_cc(fid, obj, sep); sep is optional:\n default is sep == true ... tab/space/crlf, sep == false ... compact")
 {
   octave_value_list retval;
   int const nargin(args.length());
-  if (nargin != 2) {
+  if (nargin < 2 || nargin > 3) {
     print_usage();
     return retval;
   }
+  bool const sep = (nargin == 3 ? args(2).bool_value() : true);
   octave::interpreter *interp = octave::interpreter::the_interpreter();
   if (!interp)
     error("no octave interpreter found");
   octave::stream s = interp->get_stream_list().lookup(args(0));
 
-  json_save_object(s, args(1), 0);
+  json_save_object(s, sep, args(1), 0);
   oct_printf(s, "\n");
   return retval;
 }

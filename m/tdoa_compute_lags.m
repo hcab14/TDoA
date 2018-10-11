@@ -14,10 +14,13 @@ function [tdoa,status]=tdoa_compute_lags(input, peak_search)
       tdoa(i,j).lags_filter = ~isnan(tdoa(i,j).lags);
       if peak_search.remove_outliers
         tdoa(i,j).lags_filter = tdoa_remove_outliers(tdoa(i,j).lags_filter, tdoa(i,j).lags, 3, 1e-3, 0);
+        lags_filtered         = tdoa(i,j).lags(tdoa(i,j).lags_filter);
+	status.per_pair(counter).cls.dt_usec     = 1e6*mean(lags_filtered);
+	status.per_pair(counter).cls.rms_dt_usec = 1e6*std(lags_filtered);
       end
-      printf("tdoa_compute_lags(%d,%d): [%.3f sec]\n", i,j,0);
       status.per_pair(counter).idx      = [i j];
       status.per_pair(counter).time_sec = toc();
+      printf("tdoa_compute_lags(%d,%d): [%.3f sec]\n", i,j, status.per_pair(counter).time_sec);
       counter += 1;
     end
   end

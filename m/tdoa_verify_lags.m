@@ -97,14 +97,14 @@ function [tdoa,input,status,idx,xdi,eqs,c,nsigma]=tdoa_verify_lags(plot_info, td
     err_dt_usec = 1e6*sqrt(sum(cls_std.**2));
     printf('test1 %3d: (%d,%d) (%d,%d) (%d,%d) [%+f,%+f,%+f] %+f %+f\n', ...
            j, eqs(j).ii, eqs(j).jj, eqs(j).kk, cls_mean, dt_usec, dt_usec/err_dt_usec);
-    status.equations(m).status = 'OK';
+    status.equations(j).status = 'OK';
     if ~isempty(idx_excl) && any(any([eqs(j).ii eqs(j).jj, eqs(j).kk] == idx_excl'))
-      status.equations(m).status = 'excluded';
+      status.equations(j).status = 'excluded';
     end
-    status.equations(m).idx = [eqs(j).ii eqs(j).jj(2)];
-    status.equations(m).dt_usec     = dt_usec;
-    status.equations(m).rms_dt_usec = err_dt_usec;
-    status.equations(m).nsigma      = dt_usec/err_dt_usec;
+    status.equations(j).idx         = [eqs(j).ii eqs(j).jj(2)];
+    status.equations(j).dt_usec     = dt_usec;
+    status.equations(j).rms_dt_usec = err_dt_usec;
+    status.equations(j).nsigma      = dt_usec/err_dt_usec;
   end
 
   ## prune lags_filter

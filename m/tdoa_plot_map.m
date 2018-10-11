@@ -10,8 +10,8 @@ function [tdoa,status]=tdoa_plot_map(input_data, tdoa, plot_info)
     plot_info.plot_kiwi_json = false;
   end
 
-  cmap = single([linspace(1,0,100)' linspace(0,1,100)' zeros(100,1)     ## red to green
-                 linspace(0,1,100)' ones(100,1)   linspace(0,1,100)']); ## green to white
+  cmap = [linspace(1,0,100)' linspace(0,1,100)' zeros(100,1)     ## red to green
+          linspace(0,1,100)' ones(100,1)   linspace(0,1,100)'];  ## green to white
   colormap(cmap);
 
   plot_info.h_max    = 20;

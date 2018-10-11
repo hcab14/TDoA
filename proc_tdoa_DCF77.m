@@ -40,7 +40,7 @@ function [tdoa,input]=proc_tdoa_DCF77
                                                                  'range',  0.005,            # peak search range is +-5 ms
                                                                  'dk',    [-2:2],            # use 5 points for peak fitting
                                                                  'fn', @tdoa_peak_fn_pol2fit,# fit a pol2 to the peak
-                                                                 'remove_outliers', ~config.use_constraints,
+                                                                 'remove_outliers', ~config.use_constraints
                                                                 ));
 
     if config.use_constraints

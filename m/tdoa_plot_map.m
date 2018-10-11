@@ -270,7 +270,7 @@ function save_as_json_for_map(filename, pfn, h, bb_lon, bb_lat, plot_info, plot_
     end
   end
   fid = fopen(filename, 'w');
-  json_save_cc(fid, s);
+  json_save_cc(fid, s, false); ## compact JSON (without space/tab/crlf)
   fclose(fid);
 endfunction
 

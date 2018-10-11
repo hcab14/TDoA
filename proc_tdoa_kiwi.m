@@ -25,7 +25,7 @@ function [tdoa,input]=proc_tdoa_kiwi(dir, files, config)
                                                                         'range',  0.020,            # peak search range is +-20 ms
                                                                         'dk',    [-2:2],            # use 5 points for peak fitting
                                                                         'fn', @tdoa_peak_fn_pol2fit,# fit a pol2 to the peak
-                                                                        'remove_outliers', ~config.use_constraints,
+                                                                        'remove_outliers', ~config.use_constraints
                                                                        ));
     if config.use_constraints
       [tdoa,status.cross_correlations] = tdoa_cluster_lags(config, tdoa, input, status.cross_correlations);

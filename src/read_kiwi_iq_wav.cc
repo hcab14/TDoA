@@ -15,6 +15,11 @@
 #  pragma pack(push, 1)
 #endif
 
+#if __cplusplus != 201103L
+# include <cassert>
+# define static_assert(A,B) assert(A)
+#endif
+
 class chunk_base {
 public:
   chunk_base()

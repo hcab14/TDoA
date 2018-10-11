@@ -2,7 +2,8 @@
 
 #if OCTAVE_MAJOR_VERSION >= 4 and OCTAVE_MINOR_VERSION >= 4
 #  include <octave/interpreter.h>
-#  define OCT_STREAM_TYPE octave::stream
+#  define OCT_STREAM_TYPE    octave::stream
+#  define OCT_REGEXP_REPLACE octave::regexp::replace
 OCT_STREAM_TYPE get_stream(octave_value ov) {
   octave::interpreter *interp = octave::interpreter::the_interpreter();
   if (!interp)
@@ -10,9 +11,16 @@ OCT_STREAM_TYPE get_stream(octave_value ov) {
   return interp->get_stream_list().lookup(ov);
 }
 #else
+#  include <octave/oct-map.h>
 #  include <octave/oct-stream.h>
 #  define OCT_VERSION_LESS_THAN_4_4
-#  define OCT_STREAM_TYPE octave_stream
+#  define OCT_STREAM_TYPE    octave_stream
+#  if OCTAVE_MINOR_VERSION >= 2
+#    define OCT_REGEXP_REPLACE octave::regexp::replace
+#  else 
+#    define OCT_VERSION_LESS_THAN_4_2
+#    define OCT_REGEXP_REPLACE regexp_replace
+#  endif
 OCT_STREAM_TYPE get_stream(octave_value ov) {
   return octave_stream_list::lookup(ov);
 }
@@ -108,7 +116,7 @@ void json_save_object(OCT_STREAM_TYPE& s, bool sep, octave_value const& ov, int 
     print_tabs(s, sep, lvl);
     oct_printf(s, "]");
   } else if (ov.is_sq_string()) {
-    std::string const str = octave::regexp::replace("\"", ov.string_value(), "\\\\\"");
+    std::string const str = OCT_REGEXP_REPLACE("\"", ov.string_value(), "\\\\\"");
     oct_printf(s, "\"%s\"", str.c_str());
   } else if (ov.is_dq_string()) {
     oct_printf(s, "\"%s\"", ov);

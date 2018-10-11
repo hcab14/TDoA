@@ -1,20 +1,37 @@
 #include <octave/oct.h>
-#include <octave/interpreter.h>
 
-void oct_printf(octave::stream& s, std::string fmt, octave_value const& ov=octave_value()) {
+#if OCTAVE_MAJOR_VERSION >= 4 and OCTAVE_MINOR_VERSION >= 4
+#  include <octave/interpreter.h>
+#  define OCT_STREAM_TYPE octave::stream
+OCT_STREAM_TYPE get_stream(octave_value ov) {
+  octave::interpreter *interp = octave::interpreter::the_interpreter();
+  if (!interp)
+    error("no octave interpreter found");
+  return interp->get_stream_list().lookup(ov);
+}
+#else
+#  include <octave/oct-stream.h>
+#  define OCT_VERSION_LESS_THAN_4_4
+#  define OCT_STREAM_TYPE octave_stream
+OCT_STREAM_TYPE get_stream(octave_value ov) {
+  return octave_stream_list::lookup(ov);
+}
+#endif
+
+void oct_printf(OCT_STREAM_TYPE& s, std::string fmt, octave_value const& ov=octave_value()) {
   s.printf(fmt, ov, "");
 }
 
-void print_tabs(octave::stream& s, bool sep, int lvl) {
+void print_tabs(OCT_STREAM_TYPE& s, bool sep, int lvl) {
   if (!sep)
     return;
   for (int i=0; i<lvl; ++i)
     oct_printf(s, "\t");
 }
 
-void json_save_object(octave::stream& s, bool sep, octave_value const& ov, int lvl);
+void json_save_object(OCT_STREAM_TYPE& s, bool sep, octave_value const& ov, int lvl);
 
-void json_save_struct(octave::stream& s, bool sep, octave_map const& map, int lvl, octave_idx_type idx=0) {
+void json_save_struct(OCT_STREAM_TYPE& s, bool sep, octave_map const& map, int lvl, octave_idx_type idx=0) {
   oct_printf(s, "{%s", sep ? "\n" : "");
   for (octave_map::const_iterator i=map.begin(), iend=map.end(); i!=iend;) {
     print_tabs(s, sep, lvl);
@@ -22,7 +39,7 @@ void json_save_struct(octave::stream& s, bool sep, octave_map const& map, int lv
     if (sep)
       oct_printf(s, " ");
     json_save_object(s, sep, map.contents(i)(idx), lvl);
-    octave_map::const_iterator j = ++i;
+    octave_map::const_iterator const j = ++i;
     if (j == iend)
       oct_printf(s, "%s", sep ? "\n" : "");
     else
@@ -32,8 +49,12 @@ void json_save_struct(octave::stream& s, bool sep, octave_map const& map, int lv
   oct_printf(s, "}");
 }
 
-void json_save_num(octave::stream& s, bool sep, octave_value const& ov, bool islogical=false) {
+void json_save_num(OCT_STREAM_TYPE& s, bool sep, octave_value const& ov, bool islogical=false) {
+#ifdef OCT_VERSION_LESS_THAN_4_4
+  if (ov.is_bool_type() || islogical) {
+#else
   if (ov.islogical() || islogical) {
+#endif
     oct_printf(s, ov.bool_value() ? "true" : "false");
   } else if (ov.isinf().bool_value()) {
     oct_printf(s, (ov > 0).bool_value() ? "\"Infinity\"" : "\"-Infinity\"");
@@ -43,11 +64,15 @@ void json_save_num(octave::stream& s, bool sep, octave_value const& ov, bool isl
     oct_printf(s, "%g", ov);
   }
 }
-void json_save_object(octave::stream& s, bool sep, octave_value const& ov, int lvl) {
+void json_save_object(OCT_STREAM_TYPE& s, bool sep, octave_value const& ov, int lvl) {
   octave_idx_type const n = ov.numel();
   if (n == 0) {
     oct_printf(s, "[]");
+#ifdef OCT_VERSION_LESS_THAN_4_4
+  } else if (ov.is_map()) {
+#else
   } else if (ov.isstruct()) {
+#endif
     if (n == 1) {
       json_save_struct(s, sep, ov.map_value(), lvl+1, 0);
     } else {
@@ -64,7 +89,11 @@ void json_save_object(octave::stream& s, bool sep, octave_value const& ov, int l
       print_tabs(s, sep, lvl);
       oct_printf(s, "]");
     }
+#ifdef OCT_VERSION_LESS_THAN_4_4
+  } else if (ov.is_cell()) {
+#else
   } else if (ov.iscell()) {
+#endif
     oct_printf(s, "[%s", sep ? "\n" : "");
     print_tabs(s, sep, lvl+1);
     for (octave_idx_type i=0; i<n; ++i) {
@@ -86,8 +115,13 @@ void json_save_object(octave::stream& s, bool sep, octave_value const& ov, int l
   } else if (ov.is_matrix_type() && n>1) {
     oct_printf(s, "[");
     for (octave_idx_type i=0; i<n; ++i) {
+#ifdef OCT_VERSION_LESS_THAN_4_4
+      json_save_num(s, sep, ov.is_bool_type() ? ov.bool_array_value()(i) : ov.array_value()(i),
+                    ov.is_bool_type());
+#else
       json_save_num(s, sep, ov.islogical() ? ov.bool_array_value()(i) : ov.array_value()(i),
                     ov.islogical());
+#endif
       if (i+1 < n)
         oct_printf(s, ",");
     }
@@ -109,11 +143,7 @@ DEFUN_DLD (json_save_cc,
     return retval;
   }
   bool const sep = (nargin == 3 ? args(2).bool_value() : true);
-  octave::interpreter *interp = octave::interpreter::the_interpreter();
-  if (!interp)
-    error("no octave interpreter found");
-  octave::stream s = interp->get_stream_list().lookup(args(0));
-
+  OCT_STREAM_TYPE s = get_stream(args(0));
   json_save_object(s, sep, args(1), 0);
   oct_printf(s, "\n");
   return retval;

@@ -1,7 +1,9 @@
 ## -*- octave -*-
 
 function [tdoa,input]=proc_tdoa_DCF77
-  status = struct;
+  exitcode = 0;
+  status   = struct;
+
   try
     status.version = tdoa_get_version();
 
@@ -51,6 +53,7 @@ function [tdoa,input]=proc_tdoa_DCF77
     tdoa                   = tdoa_plot_dt (input, tdoa, config, 2.5e-3);
   catch err
     status.octave_error = err;
+    exitcode            = 1;
   end_try_catch
 
   try
@@ -60,6 +63,8 @@ function [tdoa,input]=proc_tdoa_DCF77
   catch err
     err
     dbstack();
-    exit(1);
+    exitcode += 2;
   end_try_catch
+
+  exit(exitcode);
 endfunction

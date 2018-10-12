@@ -14,10 +14,10 @@ OCT_STREAM_TYPE get_stream(octave_value ov) {
 #  include <octave/oct-map.h>
 #  include <octave/oct-stream.h>
 #  define OCT_VERSION_LESS_THAN_4_4
-#  define OCT_STREAM_TYPE    octave_stream
+#  define OCT_STREAM_TYPE octave_stream
 #  if OCTAVE_MINOR_VERSION >= 2
 #    define OCT_REGEXP_REPLACE octave::regexp::replace
-#  else 
+#  else
 #    define OCT_VERSION_LESS_THAN_4_2
 #    define OCT_REGEXP_REPLACE regexp_replace
 #  endif

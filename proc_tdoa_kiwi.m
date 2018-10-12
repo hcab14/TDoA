@@ -17,7 +17,6 @@ function [tdoa,input]=proc_tdoa_kiwi(dir, files, config)
 
     config.dir       = dir;
     config.plot_kiwi = true;
-    config.visible   = 'off';
     if isfield(config, 'lat_range')
       config.plot_kiwi_json = true;
       ## determine map resolution and create config.lat and config.lon fields
@@ -45,6 +44,7 @@ function [tdoa,input]=proc_tdoa_kiwi(dir, files, config)
     [tdoa,status.position] = tdoa_plot_map(input, tdoa, config);
     tdoa                   = tdoa_plot_dt (input, tdoa, config, 2.5e-3);
   catch err
+    json_save_cc(stderr, err);
     status.octave_error = err;
     exitcode            = 1;
   end_try_catch
@@ -54,9 +54,11 @@ function [tdoa,input]=proc_tdoa_kiwi(dir, files, config)
     json_save_cc(fid, status);
     fclose(fid);
   catch err
-    dbstack();
+    json_save_cc(stderr, err);
     exitcode += 2;
   end_try_catch
 
-  exit(exitcode);
+  if exitcode != 0
+    exit(exitcode);
+  end
 endfunction

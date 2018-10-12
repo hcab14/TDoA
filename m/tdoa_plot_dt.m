@@ -9,14 +9,12 @@ function tdoa=tdoa_plot_dt(input, tdoa, plot_info, dt)
   if plot_kiwi
     set(0, 'defaultaxesposition', [0.1, 0.1, 0.8, 0.8]);
     figure(2, 'position', [200,200, 1024,690]);
-    set(2, 'visible', plot_info.visible);
-    colormap('default');
-    set (0, "defaultaxesfontsize", 12)
-    set (0, "defaulttextfontsize", 16)
+    set(0, "defaultaxesfontsize", 12)
+    set(0, "defaulttextfontsize", 16)
   else
     figure(2, 'position', [200,200, 900,600]);
-    colormap('default');
   end
+  colormap('default');
 
   bin_width = 0.25/mean(cat(1,input.fs));
 
@@ -24,11 +22,6 @@ function tdoa=tdoa_plot_dt(input, tdoa, plot_info, dt)
   for i=1:n
     for j=i+1:n
       tic;
-      if ~plot_kiwi
-        subplot(n-1,n-1, (n-1)*(i-1)+j-1);
-      else
-        clf;
-      end
       ny   = length(tdoa(i,j).t);
       tmm  = [min(tdoa(i,j).t{1}) max(tdoa(i,j).t{1})];
       nx   = round(diff(tmm)/bin_width);
@@ -37,16 +30,26 @@ function tdoa=tdoa_plot_dt(input, tdoa, plot_info, dt)
       for k=1:ny
         a(k,:)  = interp1(tdoa(i,j).t{k}, abs(tdoa(i,j).r{k}), bins, 0);
       end
+
+      if ~plot_kiwi
+        subplot(n-1,n-1, (n-1)*(i-1)+j-1);
+      else
+        clf;
+      end
       tdoa(i,j).bins = bins;
-      imagesc(1e3*bins, tdoa(i,j).gpssec, a, [0 1]);
+      image('xdata', 1e3*bins([1 end]),
+            'ydata', tdoa(i,j).gpssec([1 end]),
+            'cdata', a*size(colormap,1)); ## cross-correlations [0-1] -> colormap indices
       set(colorbar(), 'YLabel', 'correlation coefficient')
       ylabel('GPS seconds');
       xlabel('dt (msec)');
+
       if plot_kiwi
         title({sprintf('%s-%s', input(i).name, input(j).name),
                plot_info.title}, 'fontsize', 16);
       else
           title(sprintf('%s-%s', input(i).name, input(j).name));
+          set(gca, 'fontsize', 6);
       end
       [m,k] = max(mean(a));
       t0    = 1e3*bins(k);
@@ -54,9 +57,6 @@ function tdoa=tdoa_plot_dt(input, tdoa, plot_info, dt)
       if isfield(tdoa(i,j), 'time_cut')
         line(t0+1e3*dt*[-1 1], tdoa(i,j).time_cut(1), 'color', 'red', 'linewidth', 0.2);
         line(t0+1e3*dt*[-1 1], tdoa(i,j).time_cut(2), 'color', 'red', 'linewidth', 0.2);
-      end
-      if ~plot_kiwi
-        set(gca, 'fontsize', 6);
       end
       tdoa(i,j).a = a;
 
@@ -70,21 +70,19 @@ function tdoa=tdoa_plot_dt(input, tdoa, plot_info, dt)
       printf('tdoa_plot_dt(%d,%d): [%.3f sec]\n', i,j, toc());
       if plot_kiwi
         print('-dpng','-S1024,690', sprintf('%s/%s-%s dt.png', plot_info.dir, input(i).fname, input(j).fname));
-        print('-dpdf','-S1024,690', sprintf('%s/%s-%s dt.pdf', plot_info.dir, input(i).fname, input(j).fname));
       end
     end
   end
   if ~plot_kiwi
-    ha = axes('Position', [0 0 1 1], ...
-              'Xlim',     [0 1], ...
-              'Ylim',     [0 1], ...
-              'Box',      'off', ...
-              'Visible',  plot_info.visible, ...
-              'Units',    'normalized', ...
-              'clipping', 'off');
-    text(0.5, 0.98,  plot_info.title, 'fontweight', 'bold', 'horizontalalignment', 'center', 'fontsize', 15);
-    print('-dpng','-S900,600', fullfile('png', sprintf('%s_dt.png', plot_info.plotname)));
-    print('-dpdf','-S900,600', fullfile('pdf', sprintf('%s_dt.pdf', plot_info.plotname)));
+   ha = axes('Position', [0 0 1 1], ...
+             'Xlim',     [0 1], ...
+             'Ylim',     [0 1], ...
+             'Box',      'off', ...
+             'Visible',  'off', ...
+             'Units',    'normalized', ...
+             'clipping', 'off');
+   text(0.5, 0.98,  plot_info.title, 'fontweight', 'bold', 'horizontalalignment', 'center', 'fontsize', 15);
+   print('-dpng','-S900,600', fullfile('png', sprintf('%s_dt.png', plot_info.plotname)));
   end
 endfunction
 

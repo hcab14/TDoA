@@ -1,9 +1,13 @@
 ## -*- octave -*-
 
+## types of plots:
+##  plot_info.plot_type_octave = 'orig', 'kiwi', ''
+##  plot_info.plot_kiwi_json = true, false
+
 function [tdoa,status]=tdoa_plot_map(input_data, tdoa, plot_info)
   plot_kiwi = false;
-  if isfield(plot_info, 'plot_kiwi') && plot_info.plot_kiwi == true
-    plot_kiwi = true;
+  if isfield(plot_info, 'plot_kiwi')
+    plot_kiwi = plot_info.plot_kiwi;
   end
 
   if ~isfield(plot_info, 'plot_kiwi_json')
@@ -19,20 +23,14 @@ function [tdoa,status]=tdoa_plot_map(input_data, tdoa, plot_info)
 
   [tdoa,hSum] = tdoa_generate_maps(input_data, tdoa, plot_info);
 
-  if ~isfield(plot_info, 'coastlines')
-    plot_info.coastlines = 'coastline/world_50m.mat';
+  if ~plot_kiwi
+    if ~isfield(plot_info, 'coastlines')
+      plot_info.coastlines = 'coastline/world_50m.mat';
+    end
+    plot_info.coastlines_c = load(plot_info.coastlines).c;
   end
-  coastlines = load(plot_info.coastlines).c;
 
-  if plot_kiwi
-    set(0,'defaultaxesposition', [0.08, 0.08, 0.90, 0.85]);
-    figure(1, 'position', [100,100, 1024,690]);
-    set(1, 'visible', plot_info.visible);
-    set(0, "defaultaxesfontsize", 12)
-    set(0, "defaulttextfontsize", 16)
-    plot_info.titlefontsize = 16;
-    plot_info.labelfontsize = 16;
-  else
+  if ~plot_kiwi
     set(0,'defaultaxesposition', [0.05, 0.05, 0.90, 0.9]);
     figure(1, 'position', [100,100, 900,600]);
     plot_info.titlefontsize = 10;
@@ -68,46 +66,37 @@ function [tdoa,status]=tdoa_plot_map(input_data, tdoa, plot_info)
       if ~input_data(j).use
         continue
       end
-      tic;
-      title_extra = '';
-      if plot_kiwi == false
-        subplot(n_stn-1,n_stn-1, (n_stn-1)*(i-1)+j-1);
-      else
-        title_extra = plot_info.title;
-        clf;
-      end
-      b = tdoa(i,j).lags_filter;
-      titlestr = { sprintf('%s-%s %s', input_data(i).name, input_data(j).name, title_extra),
-                   sprintf('dt=%.0fus RMS(dt)=%.0fus', mean(tdoa(i,j).lags(b))*1e6, std(tdoa(i,j).lags(b))*1e6)
-                 };
       h = reshape(sqrt(tdoa(i,j).h), length(plot_info.lon), length(plot_info.lat))';
-      plot_info = plot_map(plot_info,
-                           h,
-                           titlestr,
-                           coastlines,
-                           ~false);
-      printf('tdoa_plot_map(%d,%d): [%.3f sec]\n', i,j, toc());
-      if plot_kiwi
-        plot_location(plot_info, input_data(i).coord, input_data(i).name, false);
-        plot_location(plot_info, input_data(j).coord, input_data(j).name, false);
-        set(colorbar(), 'XLabel', '\sigma')
-        print(sprintf('%s/%s-%s map.png', plot_info.dir, input_data(i).fname, input_data(j).fname), ...
-              '-dpng', '-S1024,690');
-        print(sprintf('%s/%s-%s map.pdf', plot_info.dir, input_data(i).fname, input_data(j).fname), ...
-              '-dpdf', '-S1024,690');
-        if plot_info.plot_kiwi_json
-          [bb_lon, bb_lat] = save_as_png_for_map(plot_info,
-                                                 sprintf('%s/%s-%s_for_map.png', plot_info.dir, input_data(i).fname, input_data(j).fname),
-                                                 h);
-          [_,h]=contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15], '--', 'linecolor', 0.7*[1 1 1]);
-          save_as_json_for_map(sprintf('%s/%s-%s_contour_for_map.json', plot_info.dir, input_data(i).fname, input_data(j).fname),
-                               sprintf('%s/%s-%s_for_map.png', plot_info.dir, input_data(i).fname, input_data(j).fname),
-                               h, bb_lon, bb_lat, plot_info, ~false);
+      if ~plot_kiwi
+        tic;
+        subplot(n_stn-1,n_stn-1, (n_stn-1)*(i-1)+j-1);
+        b = tdoa(i,j).lags_filter;
+        title_extra = '';
+        titlestr    = {sprintf('%s-%s %s', input_data(i).name, input_data(j).name, title_extra),
+                       sprintf('dt=%.0fus RMS(dt)=%.0fus', mean(tdoa(i,j).lags(b))*1e6, std(tdoa(i,j).lags(b))*1e6)};
+        plot_info = plot_map(plot_info,
+                             h,
+                             titlestr,
+                             false);
+        printf('tdoa_plot_map(%d,%d): [%.3f sec]\n', i,j, toc());
+      end
+      if plot_info.plot_kiwi_json
+        [bb_lon, bb_lat] = save_as_png_for_map(plot_info,
+                                               sprintf('%s/%s-%s_for_map.png', plot_info.dir, input_data(i).fname, input_data(j).fname),
+                                               h);
+        figure(2);
+        [_,h] = contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15], '--', 'linecolor', 0.7*[1 1 1]);
+        save_as_json_for_map(sprintf('%s/%s-%s_contour_for_map.json', plot_info.dir, input_data(i).fname, input_data(j).fname),
+                             sprintf('%s/%s-%s_for_map.png', plot_info.dir, input_data(i).fname, input_data(j).fname),
+                             h, bb_lon, bb_lat, plot_info, ~false);
+        if ~plot_kiwi
+          figure(1);
         end
       end
     end
   end
-  if plot_kiwi == false
+
+  if ~plot_kiwi
     for i=1:n_stn
       for j=1+i:n_stn
         subplot(n_stn-1,n_stn-1, (n_stn-1)*(i-1)+j-1);
@@ -129,37 +118,25 @@ function [tdoa,status]=tdoa_plot_map(input_data, tdoa, plot_info)
       otherwise
         error(sprintf('n_stn=%d is not supported', n_stn));
     end
-  else
-    clf;
-  end
-
-  tic;
-  titlestr = allnames(1:end-1)
-  if plot_kiwi
-    titlestr = [titlestr ' ' plot_info.title];
   end
 
   h = reshape(sqrt(hSum)/n_stn_used, length(plot_info.lon), length(plot_info.lat))';
-
-  plot_info = plot_map(plot_info,
-                       h,
-                       titlestr,
-                       coastlines,
-                       true);
-
-  for i=1:n_stn
-    plot_location(plot_info, input_data(i).coord, input_data(i).name, false);
-  end
-
-  set(colorbar(),'XLabel', '\chi^2/ndf')
-  printf('tdoa_plot_map_combined: [%.3f sec]\n', toc());
-
-  if plot_kiwi == false
+  if ~plot_kiwi
+    titlestr = allnames(1:end-1);
+    plot_info = plot_map(plot_info,
+                         h,
+                         titlestr,
+                         true);
+    for i=1:n_stn
+      plot_location(plot_info, input_data(i).coord, input_data(i).name, false);
+    end
+    set(colorbar(),'XLabel', '\chi^2/ndf')
+    printf('tdoa_plot_map_combined: [%.3f sec]\n', toc());
     ha = axes('Position', [0 0 1 1], ...
               'Xlim',     [0 1], ...
               'Ylim',     [0 1], ...
               'Box',      'off', ...
-              'Visible',  plot_info.visible, ...
+              'Visible',  'off', ...
               'Units',    'normalized', ...
               'clipping', 'off');
     text(0.5, 0.98,  plot_info.title, ...
@@ -168,16 +145,15 @@ function [tdoa,status]=tdoa_plot_map(input_data, tdoa, plot_info)
          'fontsize', 15);
     print('-dpng','-S900,600', fullfile('png', sprintf('%s.png', plot_info.plotname)));
     print('-dpdf','-S900,600', fullfile('pdf', sprintf('%s.pdf', plot_info.plotname)));
-  else
-    print('-dpng','-S1024,690', sprintf('%s/%s.png', plot_info.dir, plot_info.plotname));
-    print('-dpdf','-S1024,690', sprintf('%s/%s.pdf', plot_info.dir, plot_info.plotname));
-    if plot_info.plot_kiwi_json
-      [bb_lon, bb_lat] = save_as_png_for_map(plot_info, sprintf('%s/%s_for_map.png', plot_info.dir, plot_info.plotname), h);
-      [_,h]=contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15], '--', 'linecolor', 0.7*[1 1 1]);
-      save_as_json_for_map(sprintf('%s/%s_contour_for_map.json', plot_info.dir, plot_info.plotname),
-                           sprintf('%s/%s_for_map.png', plot_info.dir, plot_info.plotname),
-                           h, bb_lon, bb_lat, plot_info, true);
-    end
+  end
+  if plot_info.plot_kiwi_json
+    [bb_lon, bb_lat] = save_as_png_for_map(plot_info, sprintf('%s/%s_for_map.png', plot_info.dir, plot_info.plotname), h);
+    figure(2);
+    [_,h]=contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15], '--', 'linecolor', 0.7*[1 1 1]);
+    save_as_json_for_map(sprintf('%s/%s_contour_for_map.json', plot_info.dir, plot_info.plotname),
+                         sprintf('%s/%s_for_map.png', plot_info.dir, plot_info.plotname),
+                         h, bb_lon, bb_lat, plot_info, true);
+    close(2);
   end
 endfunction
 
@@ -205,18 +181,22 @@ function [bb_lon, bb_lat, idx_lon, idx_lat] = find_bounding_box(plot_info, h)
   bb_lat  = plot_info.lat(idx_lat([1 end]));
 endfunction
 
-
-function plot_info=plot_map(plot_info, h, titlestr, coastlines, do_plot_contour)
-  imagesc(plot_info.lon([1 end]), plot_info.lat([1 end]), h, [0 20]);
+function plot_info=plot_map(plot_info, h, titlestr, do_plot_contour)
+  h(h>plot_info.h_max) = plot_info.h_max;
+  imagesc('xdata', plot_info.lon([1 end]),
+          'ydata', plot_info.lat([1 end]),
+          'cdata', h);##, [0 20]);
+  hold on
   set(gca,'YDir','normal');
   xlabel('longitude (deg)');
   ylabel('latitude (deg)');
+  xlim(plot_info.lon([1 end]));
+  ylim(plot_info.lat([1 end]));
   title(titlestr, 'fontsize', plot_info.titlefontsize);
-  hold on;
   if do_plot_contour
-    [_,h]=contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15], '--', 'linecolor', 0.7*[1 1 1]);
+    contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15], '--', 'linecolor', 0.7*[1 1 1]);
   end
-  plot_info = plot_coastlines(plot_info, coastlines,
+  plot_info = plot_coastlines(plot_info,
                               [plot_info.lon(1)   plot_info.lat(1)],
                               [plot_info.lon(end) plot_info.lat(end)]);
   if isfield(plot_info, 'known_location')
@@ -224,7 +204,6 @@ function plot_info=plot_map(plot_info, h, titlestr, coastlines, do_plot_contour)
       plot_location(plot_info, plot_info.known_location(k).coord, plot_info.known_location(k).name, true);
     end
   end
-
 end
 
 function [bb_lon,bb_lat]=save_as_png_for_map(plot_info, filename, h)

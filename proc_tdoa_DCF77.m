@@ -16,10 +16,9 @@ function [tdoa,input]=proc_tdoa_DCF77
                     'known_location', struct('coord', [50.0152 9.0112],
                                              'name',  'DCF77'),
                     'dir', 'png',
-                    'plot_kiwi', true,
+                    'plot_kiwi', false,
                     'plot_kiwi_json', true,
-                    'visible', 'on',
-                    'use_constraints', ~true
+                    'use_constraints', false
                    );
 
     ## determine map resolution and create config.lat and config.lon fields
@@ -31,11 +30,11 @@ function [tdoa,input]=proc_tdoa_DCF77
     config.title    = sprintf('%g kHz %s', input(1).freq, input(1).time);
 
     ## 200 Hz high-pass filter
-    b = fir1(1024, 500/12000, 'high');
-    n = numel(input);
-    for i=1:n
-      input(i).z = filter(b,1,input(i).z)(512:end);
-    end
+#    b = fir1(1024, 500/12000, 'high');
+#    n = numel(input);
+#    for i=1:n
+#      input(i).z = filter(b,1,input(i).z)(512:end);
+#    end
 
     [tdoa, status.cross_correlations] = tdoa_compute_lags(input, ...
                                                           struct('dt',     12000,            # 1-second cross-correlation intervals
@@ -52,6 +51,7 @@ function [tdoa,input]=proc_tdoa_DCF77
     [tdoa,status.position] = tdoa_plot_map(input, tdoa, config);
     tdoa                   = tdoa_plot_dt (input, tdoa, config, 2.5e-3);
   catch err
+    json_save_cc(stderr, err);
     status.octave_error = err;
     exitcode            = 1;
   end_try_catch
@@ -61,10 +61,11 @@ function [tdoa,input]=proc_tdoa_DCF77
     json_save_cc(fid, status);
     fclose(fid);
   catch err
-    err
-    dbstack();
+    json_save_cc(stderr, err);
     exitcode += 2;
   end_try_catch
 
-  exit(exitcode);
+  if exitcode != 0
+    exit(exitcode);
+  end
 endfunction

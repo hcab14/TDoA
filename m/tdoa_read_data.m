@@ -116,6 +116,27 @@ function [input,status]=tdoa_read_data(plot_info, input, dir)
     status.result = struct('status', 'GOOD',
                            'message', sprintf('%d/%d good stations', numel(input), n));
   end
+
+  ## resample if necessary (20.25 kHz vs. 12 kHz modes)
+  [input,status] = resample_ifneeded(input,status);
+endfunction
+
+function [input,status]=resample_ifneeded(input, status)
+  ## round sampling frequencies to nearest multiple of 10 Hz
+  fs        = round(cat(1,input.fs)/10)*10;
+  [fs0,idx] = min(fs);
+  for i=1:numel(input)
+    if i==idx
+      continue
+    end
+    if abs(fs(i)/fs0-1) > 0.1
+      status.per_file(i).message = sprintf('resampled %g kHz to %g kHz', 1e-3*[fs(i) fs0]);
+      input(i).z   = resample(input(i).z, fs0, fs(i)); ## factor fs0/fs(i)
+      dt = mean(diff(input(i).t)) *fs(i)/fs0;
+      input(i).t   = input(i).t(1) + [0:numel(input(i).z)]*dt;
+      input(i).fs  = 1/dt;
+    end
+  end
 endfunction
 
 # e.g. fn = '../files/02697/20180707T211018Z_77500_F1JEK-P_iq.wav'

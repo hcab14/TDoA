@@ -1,9 +1,6 @@
 ## -*- octave -*-
 
-function [tdoa,input,idx,xdi,eqs,c,nsigma]=tdoa_verify_lags(plot_info, tdoa, input)
-  status_json   = '  "constraints": {\n';
-  json_line_end = [",", " "];
-
+function [tdoa,input,status,idx,xdi,eqs,c,nsigma]=tdoa_verify_lags(plot_info, tdoa, input)
   tic;
   n = numel(input);
   if n < 3
@@ -11,10 +8,8 @@ function [tdoa,input,idx,xdi,eqs,c,nsigma]=tdoa_verify_lags(plot_info, tdoa, inp
     [_,idx_min] = min(vertcat(tdoa(1,2).cl.std));
     tdoa(1,2).lags_filter = tdoa(1,2).lags_filter(idx_min,:);
     printf('tdoa_verify_lags: [%.3f sec]\n', toc());
-    status_json = [status_json '    "status": "OK (no constraits for 2 stations)"\n  }\n'];
-    fid = fopen('status.json', 'a');
-    fprintf(fid, status_json);
-    fclose(fid);
+    status.status = 'OK';
+    status.message = 'no constraits for 2 stations';
     return
   end
 
@@ -92,7 +87,6 @@ function [tdoa,input,idx,xdi,eqs,c,nsigma]=tdoa_verify_lags(plot_info, tdoa, inp
     end
   end
 
-  status_json = [status_json '    "equations": [\n'];
   ##combinations(comb_idx,:)
   m = numel(eqs);
   for j=1:m
@@ -103,15 +97,15 @@ function [tdoa,input,idx,xdi,eqs,c,nsigma]=tdoa_verify_lags(plot_info, tdoa, inp
     err_dt_usec = 1e6*sqrt(sum(cls_std.**2));
     printf('test1 %3d: (%d,%d) (%d,%d) (%d,%d) [%+f,%+f,%+f] %+f %+f\n', ...
            j, eqs(j).ii, eqs(j).jj, eqs(j).kk, cls_mean, dt_usec, dt_usec/err_dt_usec);
-    eq_status = "OK";
+    status.equations(j).status = 'OK';
     if ~isempty(idx_excl) && any(any([eqs(j).ii eqs(j).jj, eqs(j).kk] == idx_excl'))
-      eq_status = "excluded";
+      status.equations(j).status = 'excluded';
     end
-    status_json = [status_json sprintf('      {"idx":[%d,%d,%d], "dt_usec":%g, "err_dt_usec":%g, "nsigma":%g, "status":"%s"}%s\n', ...
-                                       eqs(j).ii, eqs(j).jj(2), dt_usec, err_dt_usec, dt_usec/err_dt_usec, eq_status, ...
-                                       json_line_end(1+(j==m)))];
+    status.equations(j).idx         = [eqs(j).ii eqs(j).jj(2)];
+    status.equations(j).dt_usec     = dt_usec;
+    status.equations(j).rms_dt_usec = err_dt_usec;
+    status.equations(j).nsigma      = dt_usec/err_dt_usec;
   end
-  status_json = [status_json '    ],\n'];
 
   ## prune lags_filter
   for i=1:size(idx,1)
@@ -124,23 +118,29 @@ function [tdoa,input,idx,xdi,eqs,c,nsigma]=tdoa_verify_lags(plot_info, tdoa, inp
   end
 
   if ~isempty(idx_excl)
-    status_json = [status_json '    "excluded": ['];
     printf('tdoa_verify_lags: exluding ');
     for i=1:numel(idx_excl)
       input(idx_excl(i)).use = false;
       printf('%s(%d) ', input(idx_excl(i)).name, idx_excl(i));
-      status_json = [status_json sprintf('{"idx":%d, "name":"%s"}%s', idx_excl(i), input(idx_excl(i)).name, json_line_end(1+i==numel(idx_excl)))];
+      status.excluded(i).idx  = idx_excl(i);
+      status.excluded(i).name = input(idx_excl(i)).name;
     end
-    status_json = [status_json '],\n'];
     printf('\n');
   end
 
-  msg = {'OK', 'Warning: abs(nsigma)>3'};
+  msg = {'OK', 'Warning'};
   printf('tdoa_verify_lags: max(abs(nsigma))=%6.3f chi2/ndf=%.3f/%d=%6.3f %s [%.3f sec]\n',
          max_nsigma, sum_nsigma2,ndf, sum_nsigma2/ndf, msg{1+(max_nsigma > 3)}, toc());
-  status_json = [status_json sprintf('    "result": { "status": "%s", "max(abs(nsigma))":%.3f, "chi2":%.3f, "ndf":%d, "chi2/ndf":%.3f }\n  },\n', ...
-                                     msg{1+(max_nsigma > 3)}, max_nsigma, sum_nsigma2,ndf, sum_nsigma2/ndf)];
-  plot_info.save_json(plot_info, 'status.json', 'a', status_json);
+  status.status = 'OK';
+  status.message = '';
+  if max_nsigma > 3
+    status.status = 'Warning';
+    status.message = 'abs(nsigma)>3';
+  end
+  status.detail.max_abs_nsigma = max_nsigma;
+  status.detail.chi2 = sum_nsigma2;
+  status.detail.ndf = ndf;
+  status.detail.chi2_ndf = sum_nsigma2/ndf;
 endfunction
 
 function [comb_idx,max_nsigma,sum_nsigma2]=find_min_nsigma(tdoa, input, idx, xdi, combinations, nsigma)

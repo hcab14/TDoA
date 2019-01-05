@@ -30,13 +30,10 @@ function do_proc {
     local plot_info="struct('lat_range', [$south $north],'lon_range', [$west $east])"
     echo $dir, $ff, $plot_info
 
-    cat <<EOF | QT_X11_NO_MITSHM=1 LD_PRELOAD=libGLX_mesa.so.0 octave-cli ## octave --no-gui ##
-proc_tdoa_kiwi($dir, $ff, $plot_info);
-exit
-EOF
-
-    cat ${FILES_PATH}/$r/status.json
-    jsonlint-php ${FILES_PATH}/$r/status.json
+    DISPLAY= QT_X11_NO_MITSHM=1 octave-cli --eval "proc_tdoa_kiwi($dir, $ff, $plot_info);" 
+    echo exitcode=$?
+    ## jsonlint-php ${FILES_PATH}/$r/status.json
+    jq . ${FILES_PATH}/$r/status.json
 }
 
 n=$(echo $@ | wc -w)

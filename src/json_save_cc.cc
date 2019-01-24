@@ -37,7 +37,7 @@ void print_tabs(OCT_STREAM_TYPE& s, bool sep, int lvl) {
     oct_printf(s, "\t");
 }
 
-void json_save_object(OCT_STREAM_TYPE& s, bool sep, octave_value const& ov, int lvl);
+void json_save_object(OCT_STREAM_TYPE& s, bool sep, octave_value ov, int lvl);
 
 void json_save_struct(OCT_STREAM_TYPE& s, bool sep, octave_map const& map, int lvl, octave_idx_type idx=0) {
   oct_printf(s, "{%s", sep ? "\n" : "");
@@ -57,6 +57,24 @@ void json_save_struct(OCT_STREAM_TYPE& s, bool sep, octave_map const& map, int l
   oct_printf(s, "}");
 }
 
+void json_save_string(OCT_STREAM_TYPE& s, bool sep, std::string str, int lvl) {
+  std::size_t found = str.find("\n");
+  if (found == std::string::npos) {
+    oct_printf(s, "\"%s\"", str.c_str());
+    return;
+  }
+  octave_value_list c;
+  int i=0;
+  while (found != std::string::npos) {
+    c(i++) = str.substr(0, found);
+    str = str.substr(found+1, std::string::npos);
+    found = str.find("\n");
+  }
+  c(i) = str;
+  octave_value ov(c.cell_value());
+  json_save_object(s, sep, ov, lvl);
+}
+
 void json_save_num(OCT_STREAM_TYPE& s, bool sep, octave_value const& ov, bool islogical=false) {
 #ifdef OCT_VERSION_LESS_THAN_4_4
   if (ov.is_bool_type() || islogical) {
@@ -72,10 +90,10 @@ void json_save_num(OCT_STREAM_TYPE& s, bool sep, octave_value const& ov, bool is
     oct_printf(s, "%g", ov);
   }
 }
-void json_save_object(OCT_STREAM_TYPE& s, bool sep, octave_value const& ov, int lvl) {
+void json_save_object(OCT_STREAM_TYPE& s, bool sep, octave_value ov, int lvl) {
   octave_idx_type const n = ov.numel();
   if (n == 0) {
-    oct_printf(s, "[]");
+    oct_printf(s, ov.is_string() ? "\"\"" : "[]");
 #ifdef OCT_VERSION_LESS_THAN_4_4
   } else if (ov.is_map()) {
 #else
@@ -117,9 +135,9 @@ void json_save_object(OCT_STREAM_TYPE& s, bool sep, octave_value const& ov, int 
     oct_printf(s, "]");
   } else if (ov.is_sq_string()) {
     std::string const str = OCT_REGEXP_REPLACE("\"", ov.string_value(), "\\\\\"");
-    oct_printf(s, "\"%s\"", str.c_str());
+    json_save_string(s, sep, str, lvl);
   } else if (ov.is_dq_string()) {
-    oct_printf(s, "\"%s\"", ov);
+    json_save_string(s, sep, ov.string_value(), lvl);
   } else if (ov.is_matrix_type() && n>1) {
     oct_printf(s, "[");
     for (octave_idx_type i=0; i<n; ++i) {

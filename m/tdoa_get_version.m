@@ -15,7 +15,7 @@ function [v,status]=get_version_from_git
     return
   end
   [status,git.hash] = system('git rev-parse --short HEAD;');
-  [status,git.tag]  = system('git describe HEAD 2>>/dev/null'); ## --tags --exact-match
+  [status,git.tag]  = system('git describe HEAD --tags'); ## --tags --exact-match
   if status != 0
     git.tag = sprintf('none-g%s', git.hash(1:end-1));
   end

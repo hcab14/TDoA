@@ -11,7 +11,7 @@ tag:
 	@octave --eval "v=tdoa_get_version();save(fullfile('mat','version.mat'),'v')"
 	@sed -i '' '/^# Created by/d' mat/version.mat
 
-kiwi_extension: oct/read_kiwi_iq_wav.oct
+kiwi_extension: oct/read_kiwi_iq_wav.oct oct/json_save_cc.oct
 	@mkdir -p ../files/00000
 	@cp iq/* ../files/00000
 	@cp gnss_pos/*.txt ../files/00000

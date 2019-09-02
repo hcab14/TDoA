@@ -215,6 +215,9 @@ function [bb_lon,bb_lat]=save_as_png_for_map(plot_info, filename, h)
   ## truncate h to the bounding box
   h = h(idx_lat, idx_lon);
 
+  ## apply map projection
+  h = correct_for_projection(h, bb_lat);
+
   ## save as png (ground overlay for google maps)
   h        = flipud(h);
   rgb      = plot_info.z_to_rgb(h);
@@ -225,6 +228,27 @@ function [bb_lon,bb_lat]=save_as_png_for_map(plot_info, filename, h)
 
   ## write the png image
   imwrite(rgb, filename, 'Alpha', alpha);
+endfunction
+
+function h=correct_for_projection(h, bb_lat)
+  ## latitude array in bounding box
+  n    = size(h,1);
+  lats = bb_lat(1) + diff(bb_lat) * (0:n-1)/(n-1);
+
+  ## latitude inverse Mercator projection function
+  f    = @(y) 2*atan(exp(y)) - pi/2;
+
+  ## y(lats) \in [0,1]
+  d2r  = @(x) x/180*pi; ## deg2rad
+  y    = @(lat) (f(d2r(lat)) - f(d2r(bb_lat(1)))) / diff(f(d2r(bb_lat)));
+
+  ## lookup indices
+  idx  = 1 + round((n-1) * y(lats));
+
+  ## apply the transformation to the latitude dimension of h
+  for j=1:size(h,2)
+    h(:,j) = h(idx,j);
+  end
 endfunction
 
 function save_as_json_for_map(filename, pfn, h, bb_lon, bb_lat, plot_info, plot_contour)

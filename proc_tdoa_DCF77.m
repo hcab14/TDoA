@@ -18,7 +18,8 @@ function [tdoa,input]=proc_tdoa_DCF77
                     'dir', 'png',
                     'plot_kiwi', false,
                     'plot_kiwi_json', true,
-                    'use_constraints', false
+                    'use_constraints', false,
+                    'new', true
                    );
 
     ## determine map resolution and create config.lat and config.lon fields
@@ -36,20 +37,28 @@ function [tdoa,input]=proc_tdoa_DCF77
 #      input(i).z = filter(b,1,input(i).z)(512:end);
 #    end
 
-    [tdoa, status.cross_correlations] = tdoa_compute_lags(input, ...
-                                                          struct('dt',     12000,            # 1-second cross-correlation intervals
-                                                                 'range',  0.005,            # peak search range is +-5 ms
-                                                                 'dk',    [-2:2],            # use 5 points for peak fitting
-                                                                 'fn', @tdoa_peak_fn_pol2fit,# fit a pol2 to the peak
-                                                                 'remove_outliers', ~config.use_constraints
-                                                                ));
+    if config.new
+      [tdoa, status.cross_correlations] = tdoa_compute_lags_new(input);
+    else
+      [tdoa, status.cross_correlations] = tdoa_compute_lags(input, ...
+                                                            struct('dt',     12000,            # 1-second cross-correlation intervals
+                                                                   'range',  0.005,            # peak search range is +-5 ms
+                                                                   'dk',    [-2:2],            # use 5 points for peak fitting
+                                                                   'fn', @tdoa_peak_fn_pol2fit,# fit a pol2 to the peak
+                                                                   'remove_outliers', ~config.use_constraints
+                                                                  ));
+    end
 
     if config.use_constraints
       [tdoa,status.cross_correlations] = tdoa_cluster_lags(config, tdoa, input, status.cross_correlations);
       [tdoa,input,status.constraints]  = tdoa_verify_lags (config, tdoa, input);
     end
     [tdoa,status.position] = tdoa_plot_map(input, tdoa, config);
-    tdoa                   = tdoa_plot_dt (input, tdoa, config, 2.5e-3);
+    if config.new
+      tdoa = tdoa_plot_dt_new(input, tdoa, config, 1e-2);
+    else
+      tdoa = tdoa_plot_dt (input, tdoa, config, 2.5e-3);
+    end
   catch err
     json_save_cc(stderr, err);
     status.octave_error = err;

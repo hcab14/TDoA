@@ -18,10 +18,18 @@ function [tdoa,status]=tdoa_plot_map(input_data, tdoa, plot_info)
           linspace(0,1,100)' ones(100,1)   linspace(0,1,100)'];  ## green to white
   colormap(cmap);
 
-  plot_info.h_max    = 20;
-  plot_info.z_to_rgb = @(h) single(ind2rgb(1+round(h/plot_info.h_max*(size(cmap,1)-1)), cmap));
+  if plot_info.new
+    plot_info.h_max =  4;
+  else
+    plot_info.h_max = 20;
+  end
+  plot_info.z_to_rgb = @(h) single(ind2rgb(1+round(clamp(h/min(max(max(h)), plot_info.h_max), 1)*(size(cmap,1)-1)), cmap));
 
-  [tdoa,hSum] = tdoa_generate_maps(input_data, tdoa, plot_info);
+  if plot_info.new
+    [tdoa,hSum] = tdoa_generate_maps_new(input_data, tdoa, plot_info);
+  else
+    [tdoa,hSum] = tdoa_generate_maps(input_data, tdoa, plot_info);
+  end
 
   if ~plot_kiwi
     if ~isfield(plot_info, 'coastlines')
@@ -31,8 +39,8 @@ function [tdoa,status]=tdoa_plot_map(input_data, tdoa, plot_info)
   end
 
   if ~plot_kiwi
-    set(0,'defaultaxesposition', [0.05, 0.05, 0.90, 0.9]);
-    figure(1, 'position', [100,100, 900,600]);
+    set(0,'defaultaxesposition', [0.05, 0.05, 0.90, 0.9])
+    figure(1, 'position', [100,100, 900,600])
     plot_info.titlefontsize = 10;
     plot_info.labelfontsize =  7.5;
   end
@@ -70,22 +78,24 @@ function [tdoa,status]=tdoa_plot_map(input_data, tdoa, plot_info)
       if ~plot_kiwi
         tic;
         subplot(n_stn-1,n_stn-1, (n_stn-1)*(i-1)+j-1);
-        b = tdoa(i,j).lags_filter;
         title_extra = '';
-        titlestr    = {sprintf('%s-%s %s', input_data(i).name, input_data(j).name, title_extra),
-                       sprintf('dt=%.0fus RMS(dt)=%.0fus', mean(tdoa(i,j).lags(b))*1e6, std(tdoa(i,j).lags(b))*1e6)};
+        titlestr{1} = sprintf('%s-%s %s', input_data(i).name, input_data(j).name, title_extra);
+        if ~plot_info.new
+          b = tdoa(i,j).lags_filter;
+          titlestr{2} = sprintf('dt=%.0fus RMS(dt)=%.0fus', mean(tdoa(i,j).lags(b))*1e6, std(tdoa(i,j).lags(b))*1e6);
+        end
         plot_info = plot_map(plot_info,
                              h,
                              titlestr,
                              false);
-        printf('tdoa_plot_map(%d,%d): [%.3f sec]\n', i,j, toc());
+        printf('tdoa_plot_map(%d,%d): [%.3f sec]\n', i,j, toc())
       end
       if plot_info.plot_kiwi_json
         [bb_lon, bb_lat] = save_as_png_for_map(plot_info,
                                                sprintf('%s/%s-%s_for_map.png', plot_info.dir, input_data(i).fname, input_data(j).fname),
                                                h);
         figure(2);
-        [_,h] = contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15], '--', 'linecolor', 0.7*[1 1 1]);
+        [~,h] = contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15], '--', 'linecolor', 0.7*[1 1 1]);
         save_as_json_for_map(sprintf('%s/%s-%s_contour_for_map.json', plot_info.dir, input_data(i).fname, input_data(j).fname),
                              sprintf('%s/%s-%s_for_map.png', plot_info.dir, input_data(i).fname, input_data(j).fname),
                              h, bb_lon, bb_lat, plot_info, ~false);
@@ -130,7 +140,7 @@ function [tdoa,status]=tdoa_plot_map(input_data, tdoa, plot_info)
     for i=1:n_stn
       plot_location(plot_info, input_data(i).coord, input_data(i).name, false);
     end
-    set(colorbar(),'XLabel', '\chi^2/ndf')
+    set(colorbar(),'XLabel', 'sqrt(\chi^2)/ndf')
     printf('tdoa_plot_map_combined: [%.3f sec]\n', toc());
     ha = axes('Position', [0 0 1 1], ...
               'Xlim',     [0 1], ...
@@ -148,13 +158,17 @@ function [tdoa,status]=tdoa_plot_map(input_data, tdoa, plot_info)
   end
   if plot_info.plot_kiwi_json
     [bb_lon, bb_lat] = save_as_png_for_map(plot_info, sprintf('%s/%s_for_map.png', plot_info.dir, plot_info.plotname), h);
-    figure(2);
-    [_,h]=contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15], '--', 'linecolor', 0.7*[1 1 1]);
+    figure(2)
+    [~,h] = contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15], '--', 'linecolor', 0.7*[1 1 1]);
     save_as_json_for_map(sprintf('%s/%s_contour_for_map.json', plot_info.dir, plot_info.plotname),
                          sprintf('%s/%s_for_map.png', plot_info.dir, plot_info.plotname),
                          h, bb_lon, bb_lat, plot_info, true);
     close(2);
   end
+endfunction
+
+function x=clamp(x,t)
+  x(x>t) = t;
 endfunction
 
 function pos=get_most_likely_pos(plot_info, h)

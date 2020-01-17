@@ -237,10 +237,10 @@ function [bb_lon,bb_lat]=save_as_png_for_map(plot_info, filename, h)
   h = h(idx_lat, idx_lon);
 
   ## apply map projection
+  h = flipud(h);
   h = correct_for_projection(h, bb_lat);
 
   ## save as png (ground overlay for google maps)
-  h        = flipud(h);
   rgb      = plot_info.z_to_rgb(h, min(plot_info.h_max, max(max(h))), plot_info.cmap);
   alpha    = single(h != plot_info.h_max);
   ## fade out starting with sigma=6
@@ -257,7 +257,9 @@ function h=correct_for_projection(h, bb_lat)
   lats = bb_lat(1) + diff(bb_lat) * (0:n-1)/(n-1);
 
   ## latitude inverse Mercator projection function
-  f    = @(y) 2*atan(exp(y)) - pi/2;
+  ## f    = @(y) 2*atan(exp(y)) - pi/2;
+  ## latitude Mercator projection function
+  f    = @(y) log(tan(y/2 + pi/4));
 
   ## y(lats) \in [0,1]
   d2r  = @(x) x/180*pi; ## deg2rad

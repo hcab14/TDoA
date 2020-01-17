@@ -28,7 +28,8 @@ function [tdoa,hSum]=tdoa_generate_maps_new(input, tdoa, plot_info)
   hSum      = [];
   for i=1:n_stn
     for j=1+i:n_stn
-      tdoa(i,j).h = interp1(tdoa(i,j).lags, tdoa(i,j).sigma2, dt{i}-dt{j}, '*pchip');
+      tdoa(i,j).h = interp1(tdoa(i,j).lags, tdoa(i,j).sigma2, dt{i}-dt{j}, '*linear', 0);
+      tdoa(i,j).h(tdoa(i,j).h < 0) = 0;
       if isempty(hSum)
         hSum  = tdoa(i,j).h;
       else

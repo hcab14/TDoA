@@ -25,13 +25,16 @@ function tdoa=tdoa_plot_dt_new(input, tdoa, plot_info, dt)
       else
         clf;
       end
-      plot(tdoa(i,j).lags*3e5, tdoa(i,j).sigma2, '*-')
+      [s2min,kmin] = min(tdoa(i,j).sigma2);
+      cdt_min      = tdoa(i,j).lags(kmin)*3e5; ## km
+      plot(tdoa(i,j).lags*3e5, tdoa(i,j).sigma2, '*-',
+           cdt_min, s2min, sprintf('r*;c\\Deltat=%.0f km;', cdt_min))
       xlim([-0.02 0.02]*3e5)
-      ## ylim([0 20])
-      xlabel('c\Deltat (km)')
+      ylim([0 max(tdoa(i,j).sigma2)])
+      xlabel(sprintf('c\Deltat (km)  (1 bin = %.0f km)', diff(tdoa(i,j).lags)(1)*3e5))
       ylabel('\sigma^2')
       if plot_kiwi
-        title({sprintf('%s-%s', input(i).name, input(j).name),
+        title({sprintf('%s-%s c\\Deltat=%.1f km', input(i).name, input(j).name, cdt_min),
                plot_info.title}, 'fontsize', 16);
       else
           title(sprintf('%s-%s', input(i).name, input(j).name));

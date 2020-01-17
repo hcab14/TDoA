@@ -17,13 +17,10 @@ function [tdoa,status]=tdoa_plot_map(input_data, tdoa, plot_info)
   cmap = [linspace(1,0,100)' linspace(0,1,100)' zeros(100,1)     ## red to green
           linspace(0,1,100)' ones(100,1)   linspace(0,1,100)'];  ## green to white
   colormap(cmap);
+  plot_info.cmap = cmap;
 
-  if plot_info.new
-    plot_info.h_max =  4;
-  else
-    plot_info.h_max = 20;
-  end
-  plot_info.z_to_rgb = @(h) single(ind2rgb(1+round(clamp(h/min(max(max(h)), plot_info.h_max), 1)*(size(cmap,1)-1)), cmap));
+  plot_info.h_max = 20;
+  plot_info.z_to_rgb = @(h, h_max, cmap) single(ind2rgb(1+round(h/(1e-10+h_max)*(size(cmap,1)-1)), cmap));
 
   if plot_info.new
     [tdoa,hSum] = tdoa_generate_maps_new(input_data, tdoa, plot_info);
@@ -95,10 +92,11 @@ function [tdoa,status]=tdoa_plot_map(input_data, tdoa, plot_info)
                                                sprintf('%s/%s-%s_for_map.png', plot_info.dir, input_data(i).fname, input_data(j).fname),
                                                h);
         figure(2);
+        [h,h_max] = adjust_scale(plot_info, h);
         [~,h] = contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15], '--', 'linecolor', 0.7*[1 1 1]);
         save_as_json_for_map(sprintf('%s/%s-%s_contour_for_map.json', plot_info.dir, input_data(i).fname, input_data(j).fname),
                              sprintf('%s/%s-%s_for_map.png', plot_info.dir, input_data(i).fname, input_data(j).fname),
-                             h, bb_lon, bb_lat, plot_info, ~false);
+                             h, h_max, bb_lon, bb_lat, plot_info, ~false);
         if ~plot_kiwi
           figure(1);
         end
@@ -157,18 +155,27 @@ function [tdoa,status]=tdoa_plot_map(input_data, tdoa, plot_info)
     print('-dpdf','-S900,600', fullfile('pdf', sprintf('%s.pdf', plot_info.plotname)));
   end
   if plot_info.plot_kiwi_json
+    [h,h_max] = adjust_scale(plot_info, h);
     [bb_lon, bb_lat] = save_as_png_for_map(plot_info, sprintf('%s/%s_for_map.png', plot_info.dir, plot_info.plotname), h);
     figure(2)
     [~,h] = contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15], '--', 'linecolor', 0.7*[1 1 1]);
     save_as_json_for_map(sprintf('%s/%s_contour_for_map.json', plot_info.dir, plot_info.plotname),
                          sprintf('%s/%s_for_map.png', plot_info.dir, plot_info.plotname),
-                         h, bb_lon, bb_lat, plot_info, true);
+                         h, h_max, bb_lon, bb_lat, plot_info, true);
     close(2);
   end
 endfunction
 
-function x=clamp(x,t)
-  x(x>t) = t;
+function [h,h_max] = adjust_scale(plot_info, h)
+  if plot_info.new
+    ## subtract minimum
+    h_min = min(min(h));
+    h    -= h_min;
+    ## dynamically adjust the scale such that the median is 4
+    h_max = median(reshape(h,1,numel(h)));
+    h    *= plot_info.h_max/h_max;
+  end
+  h_max = plot_info.h_max;
 endfunction
 
 function pos=get_most_likely_pos(plot_info, h)
@@ -208,7 +215,7 @@ function plot_info=plot_map(plot_info, h, titlestr, do_plot_contour)
   ylim(plot_info.lat([1 end]));
   title(titlestr, 'fontsize', plot_info.titlefontsize);
   if do_plot_contour
-    contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15], '--', 'linecolor', 0.7*[1 1 1]);
+    contour(plot_info.lon, plot_info.lat, h, [1 3 5 10 15]*plot_info.h_max/20, '--', 'linecolor', 0.7*[1 1 1]);
   end
   plot_info = plot_coastlines(plot_info,
                               [plot_info.lon(1)   plot_info.lat(1)],
@@ -234,7 +241,7 @@ function [bb_lon,bb_lat]=save_as_png_for_map(plot_info, filename, h)
 
   ## save as png (ground overlay for google maps)
   h        = flipud(h);
-  rgb      = plot_info.z_to_rgb(h);
+  rgb      = plot_info.z_to_rgb(h, min(plot_info.h_max, max(max(h))), plot_info.cmap);
   alpha    = single(h != plot_info.h_max);
   ## fade out starting with sigma=6
   b        = h > 0.3*plot_info.h_max & h < plot_info.h_max;
@@ -265,15 +272,16 @@ function h=correct_for_projection(h, bb_lat)
   end
 endfunction
 
-function save_as_json_for_map(filename, pfn, h, bb_lon, bb_lat, plot_info, plot_contour)
+function save_as_json_for_map(filename, pfn, h, h_max, bb_lon, bb_lat, plot_info, plot_contour)
   s.filename     = pfn;
   s.imgBounds    = struct('south', bb_lat(1),
                           'north', bb_lat(2),
                           'east',  bb_lon(1),  ## NOTE: east and west were reversed before
                           'west',  bb_lon(2));
   s.plot_coutour = plot_contour;
-  get_rgb = @(x) round(255*(plot_info.z_to_rgb(x)));
+  get_rgb = @(x) round(255*(plot_info.z_to_rgb(x, min(plot_info.h_max, h_max), plot_info.cmap)));
   c = get(h);
+
   for i=1:length(c.children)
     ci = get(c.children(i));
     if ~isnan(ci.vertices(end,end)) ## closed contours -> polygons

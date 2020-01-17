@@ -134,7 +134,7 @@ void json_save_object(OCT_STREAM_TYPE& s, bool sep, octave_value ov, int lvl) {
     print_tabs(s, sep, lvl);
     oct_printf(s, "]");
   } else if (ov.is_sq_string()) {
-    std::string const str = OCT_REGEXP_REPLACE("\"", ov.string_value(), "\\\\\"");
+    std::string const str = OCT_REGEXP_REPLACE("\"", ov.string_value(), "'");
     json_save_string(s, sep, str, lvl);
   } else if (ov.is_dq_string()) {
     json_save_string(s, sep, ov.string_value(), lvl);

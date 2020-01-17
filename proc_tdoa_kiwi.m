@@ -58,6 +58,13 @@ function [tdoa,input]=proc_tdoa_kiwi(dir, files, config)
     else
       tdoa = tdoa_plot_dt (input, tdoa, config, 2.5e-3);
     end
+
+    ## save into a .mat file (except the raw IQ samples and times)
+    for i=1:numel(input)
+      input(i).t=[];
+      input(i).z=[];
+    end
+    save('-mat', sprintf('%s/tdoa_data.mat', config.dir))
   catch err
     json_save_cc(stderr, err);
     status.octave_error = err;

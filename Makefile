@@ -21,6 +21,7 @@ dcf77: oct/read_kiwi_iq_wav.oct oct/json_save_cc.oct
 	octave-cli --eval proc_tdoa_DCF77\;
 
 oct/%.oct: src/%.cc
+	@mkdir -p oct
 	cd oct && mkoctfile -I../include ../$<
 
 clean:

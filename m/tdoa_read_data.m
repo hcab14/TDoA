@@ -83,10 +83,10 @@ function [input,status]=tdoa_read_data(plot_info, input, dir)
     b = input(i).t<t0 | input(i).t>t1;
     input(i).t(b) = [];
     input(i).z(b) = [];
-    input(i).use  = numel(input(i).z)/12000 > 10;
+    input(i).use  = numel(input(i).z)/input(i).fs > 10;
     if ~input(i).use
       printf('tdoa_read_data: %-40s excluded (%.2f sec < %g sec overlap)\n', ...
-             input(i).fn, numel(input(i).z)/12000, 10);
+             input(i).fn, numel(input(i).z)/input(i).fs, 10);
       status.per_file(i).message = sprintf('excluded (%.2f sec < %g sec overlap)', numel(input(i).z)/12000, 10);
     end
   end
@@ -97,7 +97,7 @@ function [input,status]=tdoa_read_data(plot_info, input, dir)
   for i=1:n
     if ~input(i).use
       status.per_file(i).idx    = -1;
-      status.per_file(i).status = 'BAD'
+      status.per_file(i).status = 'BAD';
     else
       status.per_file(i).idx    = counter;
       status.per_file(i).status = 'GOOD';

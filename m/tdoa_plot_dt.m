@@ -28,7 +28,7 @@ function tdoa=tdoa_plot_dt(input, tdoa, plot_info, dt)
       bins = tmm(1)+bin_width*(0.5+[0:nx-1]);
       a    = zeros(ny,nx);
       for k=1:ny
-        a(k,:)  = interp1(tdoa(i,j).t{k}, abs(tdoa(i,j).r{k}), bins, 0);
+        a(k,:)  = interp1(tdoa(i,j).t{k}, abs(tdoa(i,j).r{k}), bins, 0, '*linear');
       end
 
       if ~plot_kiwi

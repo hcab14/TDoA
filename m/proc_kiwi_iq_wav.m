@@ -81,6 +81,10 @@ function [x,xx,fs,last_gpsfix]=proc_kiwi_iq_wav(fn, max_last_gpsfix)
     k      += 1;
   end
 
+  if numel(fs) < 3 ## something wrong happened above and the sample rate value is not ok
+    last_gpsfix = 254;
+  end
+
   ## reduce the influence of outliers
   fs = median(fs);
 endfunction

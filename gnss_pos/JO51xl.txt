@@ -1,0 +1,1 @@
+d.JO51xl = struct('coord', [51.466044,11.977189], 'host', 'db0hal.dyndns.org', 'port', 8073);

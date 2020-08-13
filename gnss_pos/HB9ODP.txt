@@ -1,0 +1,1 @@
+d.HB9ODP = struct('coord', [46.499351,8.798828], 'host', 'hb9odp.proxy.kiwisdr.com', 'port', 8073);

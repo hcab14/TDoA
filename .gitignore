@@ -5,5 +5,4 @@ octave-workspace
 .DS_Store
 *.log
 *.mat
-*.wav
 *.png

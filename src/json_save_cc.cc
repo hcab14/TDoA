@@ -1,6 +1,6 @@
 #include <octave/oct.h>
 
-#if OCTAVE_MAJOR_VERSION >= 4 and OCTAVE_MINOR_VERSION >= 4
+#if (OCTAVE_MAJOR_VERSION >= 4 and OCTAVE_MINOR_VERSION >= 4) or OCTAVE_MAJOR_VERSION >= 5
 #  include <octave/interpreter.h>
 #  define OCT_STREAM_TYPE    octave::stream
 #  define OCT_REGEXP_REPLACE octave::regexp::replace

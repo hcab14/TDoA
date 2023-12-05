@@ -26,4 +26,4 @@ oct/%.oct: src/%.cc
 	cd oct && mkoctfile -I../include ../$<
 
 clean:
-	rm -f pdf/*.pdf png/*.png
+	rm -f pdf/*.pdf png/*.png oct/*.oct

@@ -33,6 +33,10 @@ function [tdoa,input]=proc_tdoa_kiwi(dir, files, config)
     end
 
     [input,status.input] = tdoa_read_data(config, input, dir);
+    if strcmp(status.input.result.status, 'BAD')
+      error('ERROR: < 2 good stations found\n');
+    end
+    
     if config.new
       [tdoa, status.cross_correlations] = tdoa_compute_lags_new(input);
     else

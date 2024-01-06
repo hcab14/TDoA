@@ -37,6 +37,12 @@ function [input,status]=tdoa_read_data(plot_info, input, dir)
       continue
     end
 
+    if gpsfix == 253
+      printf('tdoa_read_data: %-40s sample rate error\n', input(i).fn);
+      status.per_file(i).message = 'sample rate error';
+      continue
+    end
+
     input(i).t      = cat(1,xx.t);
     input(i).z      = cat(1,xx.z);
     input(i).gpssec = cat(1,x.gpssec)+1e-9*cat(1,x.gpsnsec);
@@ -105,7 +111,7 @@ function [input,status]=tdoa_read_data(plot_info, input, dir)
     end
   end
 
-  ## exlude bad stations
+  ## exclude bad stations
   input = input(vertcat(input.use));
 
   if numel(input) < 2
